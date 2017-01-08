@@ -1,0 +1,14 @@
+= Task =
+- Cybathalon 4: Zero-training adaptive classification systems
+- use a backlog for Bayesian approach
+- Idea: try with and without training and see if updating improves performance
+- Idea: train different classifiers on backlog data and see which performs best
+
+
+= Steps =
+- look at data (provided data)
+-- what is its nature
+- which clsfrs do we want to use?
+- skeleton for connection between game and our thing
+- Bayesian framework
+
