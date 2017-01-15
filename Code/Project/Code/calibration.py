@@ -8,7 +8,7 @@ from pylab import *
 nTrials             = 5
 # targets
 tmp                 = .1
-target_duration     = 10     # controls how long to show a target 
+target_duration     = 10     # controls how long to show a target
 
 '''
 Note to reader; there are some random numbers in this script; these are
@@ -25,7 +25,18 @@ close('all')
 
 circleLabels = [ 'feet' , 'right hand', 'left hand']
 
+print(hdr.labels)
+
 fig, ax = subplots(1,1)
+
+# from matplotlib import pyplot as plt
+mng = get_current_fig_manager()
+mng.full_screen_toggle()
+subplots_adjust(left=0, right=1, top=1, bottom=0)
+import matplotlib as mpl
+mpl.rcParams['toolbar'] = 'None'
+# fig.canvas.full_screen_toggle()
+# show()
 
 r = 2
 nCircle = len(circleLabels)  + 1

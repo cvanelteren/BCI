@@ -11,11 +11,16 @@ import bufhelp
 
 # connect to buffer
 ftc, hdr = bufhelp.connect()
+
 # SET THE SUBJECT
 num = 0
 # storage for the data
 dataDir = '../Data/'
 fileCalibration = dataDir + 'calibration_subject_{0}.hdf5'.format(num)
+import os
+if os.path.isfile(fileCalibration):
+    num = raw_input('Please enter a new subject number')
+    fileCalibration = dataDir + 'calibration_subject_{0}.hdf5'.format(num)
 fileTest  = dataDir + 'test_subjecet_{0}'.format(num)
 print('Storing data in: \n\t ', fileCalibration)
 
@@ -64,36 +69,56 @@ while run:
             # there is some evidence that p300 is within the theta / alpha band.
             # Here i choose a wide band pass that would be able to catch it
             # and supress high frequency noise.
-            model = classification.trainClassifier(fileCalibration, hdr.fSample)
+            # model = classification.trainClassifier(fileCalibration, hdr.fSample)
             bufhelp.sendEvent("training","done")
 
         elif e.value =="test":
             print("Feedback phase")
             keep = True
+            fig, ax = subplots()
+
+            tmp = zeros((4, 200))
+            ylim([-1,1])
+            p = ax.plot(tmp.T)
+            show(0)
+            print(len(p))
+
+
             while keep:
-                data, events, stopevents = bufhelp.gatherdata(["stimulus"],\
-                                                            trlen_ms,[("run","end"),\
-                                                            ('test', 'end')], \
-                                                            milliseconds=True, verbose = False)
-                if stopevents.type == 'test' and stopevents.value == 'end':
-                    keep = False
-                else:
-                    filterBand = [0, 60]
-                    # linear detrend, filter, average across epochs
-                    processedData = preproc.stdPreproc(data, filterBand, hdr)
-                    pred = FeedbackSignals.genPrediction(processedData, model, events)
-                    # sanity check
-                    print('prediction', pred)
-                    bufhelp.sendEvent("classifier.prediction", pred)
-                    data = np.array(data)
-                    ev              = np.array([(event.type, event.value) for event in events])
-                    # save the test phase
-                    with File(fileTest,'w') as f:
-                        # f.create_dataset('targets', data = tmp)
-                        f.create_dataset('rawData', data = data)
-                        f.create_dataset('events', data = ev, dtype = dt)
-                        f.create_dataset('processedData', data = processedData)
-                        # f.create_dataset()
+                s = ftc.getHeader().nSamples - 1
+                dat = ftc.getData((s,s))
+                tmp = np.roll(tmp, -1)
+                tmp[:,-1] = dat
+                [pi.set_ydata(tmp[idx, :]) for idx, pi in enumerate(p)]
+                pause(1e-10)
+                draw()
+
+
+
+
+                # data, events, stopevents = bufhelp.gatherdata(["stimulus"],\
+                #                                             trlen_ms,[("run","end"),\
+                #                                             ('test', 'end')], \
+                #                                             milliseconds=True, verbose = False)
+                # if stopevents.type == 'test' and stopevents.value == 'end':
+                #     keep = False
+                # else:
+                #     filterBand = [0, 60]
+                #     # linear detrend, filter, average across epochs
+                #     processedData = preproc.stdPreproc(data, filterBand, hdr)
+                #     pred = FeedbackSignals.genPrediction(processedData, model, events)
+                #     # sanity check
+                #     print('prediction', pred)
+                #     bufhelp.sendEvent("classifier.prediction", pred)
+                #     data = np.array(data)
+                #     ev              = np.array([(event.type, event.value) for event in events])
+                #     # save the test phase
+                #     with File(fileTest,'w') as f:
+                #         # f.create_dataset('targets', data = tmp)
+                #         f.create_dataset('rawData', data = data)
+                #         f.create_dataset('events', data = ev, dtype = dt)
+                #         f.create_dataset('processedData', data = processedData)
+                #         # f.create_dataset()
 
         elif e.value =="exit":
             run = False
