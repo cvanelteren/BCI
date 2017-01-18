@@ -26,6 +26,7 @@ def SVM(data, events, type = 'target'):
 
     reshapedDataType = dataType.reshape(dataType.shape[0], dataType.shape[1]* dataType.shape[2])
 
+
     uniqueLabels = sorted(list(set(eventType[:,1])))
     label_to_int = dict((l, i) for i, l in enumerate(uniqueLabels))
     int_to_char = dict((i, l) for i, l in enumerate(uniqueLabels))
@@ -34,16 +35,17 @@ def SVM(data, events, type = 'target'):
     	convertedLabels.append([label_to_int[label]])
 
     tmp = np.array(convertedLabels)
+
     test = MultiLabelBinarizer().fit_transform(tmp)
 
-    print(test)
+    # print(test)
     # print(eventType[:,1])
     from sklearn import svm
     model = OneVsRestClassifier(svm.SVC(class_weight='balanced', probability = 1))
-    print(eventType[:,1].shape)
+    # print(eventType[:,1].shape)
     model.fit(reshapedDataType, test)
     # returns trained model
-    return model, reshapedDataType
+    return model, reshapedDataType, eventType
 
 
 
@@ -102,10 +104,16 @@ if __name__ == '__main__':
     with File('../Data/calibration_subject_4_LAB.hdf5') as f:
         for i in f: print(i)
         data = f['processedData'].value
+        rawData = f['rawData'].value
+        cap  = f['cap'].value
         events = f['events'].value
-    model, reshapedData = SVM(data, events)
-    out = model.predict_proba(reshapedData)
-    print(out)
+    model, reshapedData, tmp = SVM(rawData[:,:,:10], events)
+    modelERN, _, eventTarget = SVM(rawData[:, :, :10], events, type = 'feedback')
+
+    out = modelERN.predict(reshapedData)
+    print(out[:5], eventTarget[:5,1])
+    idx = 20
+    # print(out[:idx], tmp[:idx,1])
     fig, ax = subplots()
 
 
