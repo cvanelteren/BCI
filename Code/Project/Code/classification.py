@@ -45,7 +45,7 @@ def SVM(data, events, type = 'target'):
     # print(eventType[:,1].shape)
     model.fit(reshapedDataType, test)
     # returns trained model
-    return model, reshapedDataType
+    return model, reshapedDataType, eventType
 
 
 
@@ -104,13 +104,17 @@ if __name__ == '__main__':
     with File('../Data/calibration_subject_4_LAB.hdf5') as f:
         for i in f: print(i)
         data = f['processedData'].value
+        rawData = f['rawData'].value
         cap  = f['cap'].value
         events = f['events'].value
-    model, reshapedData = SVM(data, events)
-    out = model.predict_proba(reshapedData)
-    print(out)
+    model, reshapedData, tmp = SVM(rawData[:,:,:10], events)
+    modelERN, _, eventTarget = SVM(rawData[:, :, :10], events, type = 'feedback')
+
+    out = modelERN.predict(reshapedData)
+    print(out[:5], eventTarget[:5,1])
+    idx = 20
+    # print(out[:idx], tmp[:idx,1])
     fig, ax = subplots()
-    print(cap)
 
 
     # print(model.predict_proba(reshapedData))
