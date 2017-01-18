@@ -1,16 +1,14 @@
+import numpy as np
 
-filterBand = [0, 60]
-tic = time.time()
-# linear detrend, filter, average across epochs
-data = preproc.stdPreproc(data, filterBand, hdr)
-# average over time
-mdata = np.mean(data, 1)
-# compute the probability of each event with respect to
-# the binary classes
-pred = model.predict_proba(mdata)
-# obtain the row, i.e. event, of the max probability
-# with respect to the target class
-idx = np.argmax(pred, int(labels[0]))[0]
-pred = events[idx].value
-print('prediction', pred)
-
+def genPrediction(data, model, events):
+    # average over time
+    mdata = np.mean(data, 1)
+    # compute the probability of each event with respect to
+    # the binary classes
+    pred = model.predict_proba(mdata)
+    # obtain the row, i.e. event, of the max probability
+    # with respect to the target class
+    # target class has index 0
+    idx = np.argmax(pred, 0)[0] # returns a tuple (oddly enough); first index is row which is what we want
+    pred = events[idx].value
+    return pred

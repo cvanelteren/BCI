@@ -32,18 +32,6 @@ def detrend(data, dim=1, type="linear"):
     >>> data = preproc.detrend(data)
     '''
 
-    # if not isinstance(type,str):
-    #     raise Exception("type is not a string.")
-    #
-    # if type!="linear" and typmdatae!="constant":
-    #     raise Exception("type should either be linear or constant")
-    #
-    # if not isinstance(data,np.ndarray):
-    #     X = concatdata(data)
-    # elif isinstance(data,np.ndarray):
-    #     X = data
-    # else:sys.path.append('../')
-    #     raise Exception("data should be a numpy array or list of numpy arrays.")
 
     X = signal.detrend(data, axis=dim)
     return X
