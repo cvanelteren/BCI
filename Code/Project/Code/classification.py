@@ -27,9 +27,9 @@ def SVM(data, events, type = 'target'):
     reshapedDataType = dataType.reshape(dataType.shape[0], dataType.shape[1]* dataType.shape[2])
 
     chars = sorted(list(set(eventType[:,1])))
-    print(chars)
+    # print(chars)
     char_to_int = dict((c, i) for i, c in enumerate(chars))
-    print(char_to_int)
+    # print(char_to_int)
     int_to_char = dict((i, c) for i, c in enumerate(chars))
     char_reviews = []
     for rev in eventType[:,1]:
@@ -38,11 +38,11 @@ def SVM(data, events, type = 'target'):
     tmp = np.array(char_reviews)
     test = MultiLabelBinarizer().fit_transform(tmp)
 
-    print(test)
+    # print(test)
     # print(eventType[:,1])
     from sklearn import svm
     model = OneVsRestClassifier(svm.SVC(class_weight='balanced', probability = 1))
-    print(eventType[:,1].shape)
+    # print(eventType[:,1].shape)
     model.fit(reshapedDataType, test)
     # returns trained model
     return model, reshapedDataType
@@ -104,11 +104,13 @@ if __name__ == '__main__':
     with File('../Data/calibration_subject_4_LAB.hdf5') as f:
         for i in f: print(i)
         data = f['processedData'].value
+        cap  = f['cap'].value
         events = f['events'].value
     model, reshapedData = SVM(data, events)
     out = model.predict_proba(reshapedData)
     print(out)
     fig, ax = subplots()
+    print(cap)
 
 
     # print(model.predict_proba(reshapedData))
