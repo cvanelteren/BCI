@@ -26,16 +26,14 @@ def SVM(data, events, type = 'target'):
 
     reshapedDataType = dataType.reshape(dataType.shape[0], dataType.shape[1]* dataType.shape[2])
 
-    chars = sorted(list(set(eventType[:,1])))
-    print(chars)
-    char_to_int = dict((c, i) for i, c in enumerate(chars))
-    print(char_to_int)
-    int_to_char = dict((i, c) for i, c in enumerate(chars))
-    char_reviews = []
-    for rev in eventType[:,1]:
-    	char_reviews.append([char_to_int[rev]])
+    uniqueLabels = sorted(list(set(eventType[:,1])))
+    label_to_int = dict((l, i) for i, l in enumerate(uniqueLabels))
+    int_to_char = dict((i, l) for i, l in enumerate(uniqueLabels))
+    convertedLabels = []
+    for label in eventType[:,1]:
+    	convertedLabels.append([label_to_int[label]])
 
-    tmp = np.array(char_reviews)
+    tmp = np.array(convertedLabels)
     test = MultiLabelBinarizer().fit_transform(tmp)
 
     print(test)
