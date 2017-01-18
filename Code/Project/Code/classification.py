@@ -22,7 +22,7 @@ def LogReg(data , events):
 def SVM(data, events, type = 'target'):
     idxOfType = np.where(events[:, 0] == type)[0]
     eventType = events[idxOfType, :]
-    dataType = data[idxOfType, :, :10]
+    dataType = data[idxOfType, :, : ]
 
     reshapedDataType = dataType.reshape(dataType.shape[0], dataType.shape[1]* dataType.shape[2])
 
