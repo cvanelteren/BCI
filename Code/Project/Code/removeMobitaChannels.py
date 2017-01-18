@@ -4,7 +4,7 @@ from shutil import move
 '''
 This is a temporary script to remove the number of channels from the
 data we already have.
-We had 37 output by the mobita, but we only need the first channels as dictated
+We had 37 output by the mobita, b   ut we only need the first channels as dictated
 by the cap file. This is fixed within the signal processing script
 '''
 def removeChannels(fileDir):

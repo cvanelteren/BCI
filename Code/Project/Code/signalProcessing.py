@@ -10,7 +10,8 @@ import  numpy as np
 ftc, hdr = bufhelp.connect() # connect to buffer
 
 # get cap file
-filepath    = '../../resources/caps/cap_tmsi_mobita_im.txt'
+filepath    = '../../Buffer/resources/caps/cap_tmsi_mobita_im.txt'
+print(filepath)
 capfile     = np.loadtxt(filepath, dtype=str)
 nChans      = len(capfile)  # mobita outputs 37, redundant channels remove them
 
