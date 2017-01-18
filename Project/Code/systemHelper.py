@@ -1,4 +1,6 @@
+from __future__ import print_function
 import os
+
 def checkOverwrite(dir, conditionType, subjectNumber,  fileType = '.hdf5'):
     '''
     Checks whether a file is in the directory

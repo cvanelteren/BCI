@@ -32,10 +32,10 @@ close('all')
 
 circleLabels = ['feet', 'right hand', 'left hand']
 
-fig, ax     = subplots(1, 1)
+fig, ax = subplots(1, 1)
 subplots_adjust(left=0, right=1, top=1, bottom=0)
 # from matplotlib import pyplot as plt
-mng         = get_current_fig_manager()
+mng = get_current_fig_manager()
 mng.full_screen_toggle()
 rcParams['toolbar'] = 'None'
 
@@ -65,9 +65,6 @@ def press(event):
 
 
 def waitForSpacePress():
-    '''
-    Waits until space bar is pressed
-    '''
     global start
     start = 0
     alpha = True
@@ -88,8 +85,8 @@ ax.set_yticks([])
 nCond = len(circleLabels)
 
 # create feedback vector
-cutoff                      = nTrials * proportion_negative
-give_feedback               = np.zeros((nTrials), dtype=int)
+cutoff = nTrials * proportion_negative
+give_feedback = np.zeros((nTrials), dtype=int)
 give_feedback[:int(cutoff)] = 1
 np.random.shuffle(give_feedback)
 
@@ -107,38 +104,33 @@ fig.canvas.mpl_connect('key_press_event', press)
 
 # display welcome text
 # create a figure which is full screen in first place TODO
-text = ax.text( 0,\
-                0,\
-                'Welcome\n Press space to start',\
-                color = 'white',\
-                horizontalalignment = 'center',\
-                verticalalignment = 'center')
+text = ax.text(0, 0,\
+'Welcome\n Press space to start',\
+color = 'white',\
+horizontalalignment = 'center',\
+verticalalignment = 'center')
 
 # colors
-resetcolor      = '#404040'
-targetcolor     = '#a6a6a6'
-centercolor     = '#a6a6a6'
-textcolor       = 'white'
-restingcolor    = 'white'
+resetcolor = '#404040'
+targetcolor = '#a6a6a6'
+centercolor = '#a6a6a6'
+textcolor = 'white'
+restingcolor = 'white'
 
 waitForSpacePress()
 
 # set up the circle objects
-center      = (0, 0)
-circles     = []
+center = (0, 0)
+circles = []
 for i in range(nCircle):
-    coordinate      = (np.sin(angles[i]), np.cos(angles[i]))
+    coordinate = (np.sin(angles[i]), np.cos(angles[i]))
     # the last one is the one that moves
     if i == nCircle - 1:
         c = Circle(center, r / 8., color=resetcolor)
     else:
         c = Circle(coordinate, r / 4., color=resetcolor)
-        ax.text(coordinate[0],\
-                coordinate[1],\
-                circleLabels[i],\
-                color = textcolor,\
-                horizontalalignment = 'center',\
-                verticalalignment='center')
+        ax.text(coordinate[0], coordinate[1], circleLabels[i],\
+        color = textcolor,  horizontalalignment='center', verticalalignment='center')
     circles.append(c)
     ax.add_artist(circles[i])
 
@@ -147,14 +139,12 @@ for idx, target in enumerate(targets):
         ax.cla()
         # display break text
         # create a figure which is full screen in first place TODO
-        text_str = 'Take a short break\n This was trial ' + \
-                    str(idx) + ' of ' + str(len(targets)) + \
-                    '\n Press space to start'
-
-        text                = ax.text(0, 0,text_str,\
-        color               = 'white',\
+        text_str = 'Take a short break\n This was trial ' + str(
+            idx) + ' of ' + str(len(targets)) + '\n Press space to start'
+        text = ax.text(0, 0,text_str,\
+        color = 'white',\
         horizontalalignment = 'center',\
-        verticalalignment   = 'center')
+        verticalalignment = 'center')
         waitForSpacePress()
 
         # set up the circle objects
@@ -167,12 +157,8 @@ for idx, target in enumerate(targets):
                 c = Circle(center, r / 8., color=resetcolor)
             else:
                 c = Circle(coordinate, r / 4., color=resetcolor)
-                ax.text(coordinate[0],\
-                        coordinate[1],\
-                        circleLabels[i],\
-                        color = textcolor,\
-                        horizontalalignment = 'center',\
-                        verticalalignment   = 'center')
+                ax.text(coordinate[0], coordinate[1], circleLabels[i],\
+                color = textcolor,  horizontalalignment='center', verticalalignment='center')
             circles.append(c)
             ax.add_artist(circles[i])
 

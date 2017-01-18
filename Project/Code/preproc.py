@@ -3,7 +3,7 @@ import numpy as np
 import scipy.signal as signal
 from pylab import *
 from h5py import File
-def detrend(data, dim=1, type="linear"):
+def detrend(data, dim = 1, type = "linear"):
     '''Removes trends from the data.
 
     Applies the scipy.signal.detrend function to the data, this numpy function
@@ -26,7 +26,7 @@ def detrend(data, dim=1, type="linear"):
 
     Examples
     --------
-    >>> data, events = ftc.getData(0,100)
+    >>> data, events = f250tc.getData(0,100)
     >>> data = preproc.detrend(data,type="constant")
     >>> data = bufhelp.gatherdata("start",10,"stop")
     >>> data = preproc.detrend(data)
@@ -43,10 +43,11 @@ def badChannelRemoval(data, x = 3):
     '''
     std = np.std(data)
     # filter with x standard deviations
-
+    print(std)
     events, time, bad_chans = np.where(abs(data) >  x * std)
     # set all channels to useable
     useable = np.ones(data.shape[-1], dtype = bool)
+
     # if there is an outlier dont use that channel
     useable[np.unique(bad_chans)] = False
     return useable
@@ -70,16 +71,92 @@ def butterFilter(data, band, N = 5, hdr = 100, dim = 1, filter_type = 'lowpass')
     return fdata
 
 
+import numpy as np
 
-def stdPreproc(data, band,  hdr):
+def plotERP(data, events, cap,  title = None):
+
+    types       = events[:, 1]
+    uTypes      = np.unique(types)
+    erp = np.zeros( ( len(uTypes), data.shape[1], data.shape[2] ) )
+    label = []
+    for idx, type in enumerate(uTypes):
+        findIt = np.where(types == type)[0]
+        # conditions = np.unique(types[findIt, 1])
+        # print(findIt)
+        label.append(type)
+        meaned =  np.mean(data[findIt, :, :], 0 )
+        # print(meaned.shape)
+        erp[idx, :, :] = meaned
+    if erp.shape[-1] % 2 == 0:
+        nRows = nCols =  erp.shape[-1] / 2
+    else:
+        nRows = (erp.shape[-1] + 1) // 2
+    nCols = erp.shape[-1] // nRows
+
+    fig, axs = subplots(nrows = int(nRows), ncols = int(nCols), sharex = 'all')
+    for idx, ax in enumerate(axs.flatten()):
+        ax.plot(erp[:, :, idx].T)
+        ax.legend(label, loc = 0)
+        ax.set_title(cap[idx,0])
+
+    show()
+
+
+def car(data):
+  '''
+  Return a common average reference (CAR) spatial filter for n channels.
+  The common average reference is a re-referencing scheme that is
+  commonly used when no dedicated reference is given. Since the
+  average signal is subtracted from each sensor's signal, it reduces
+  signals that are common to all sensors, such as far-away noise.
+  Parameters
+  ----------
+  n : int
+    The number of sensors to filer.
+  Returns
+  -------
+  W : array
+    Spatial filter matrix of shape (n, n) where n is the number of
+    sensors. Each row of W is single spatial filter.
+  Examples
+  --------
+  >>> car(4)
+  array([[ 0.75, -0.25, -0.25, -0.25],
+         [-0.25,  0.75, -0.25, -0.25],
+         [-0.25, -0.25,  0.75, -0.25],
+         [-0.25, -0.25, -0.25,  0.75]])
+  '''
+  n = data.shape[-1]
+  W = np.eye(n) - 1 / float(n)
+  return  data.dot(W)
+
+def stdPreproc(data, band,  hdr, cap = None):
     '''
     Function performs:
             Detrends the data
             Removes bad channels
             Filters the data
     '''
-    data = detrend(data)
-    useable = badChannelRemoval(data)
-    data = data[:, :, useable]
-    data = butterFilter(data, band = band, hdr = hdr)
+    global events
+    data        = detrend(data)
+    # plotERP(data, events, cap)
+    # data        = np.array([data[i, :, :] - mean(data[i,:,:], 0) for i in range(data.shape[0])])
+    data        = signal.detrend(data, axis = 2, type = 'constant')
+    plotERP(data, events, cap)
+    data        = butterFilter(data, band = band, hdr = hdr)
+    data        = car(data)
+    useable     = badChannelRemoval(data)
+    print(np.mean(data,0))
+
+
+    data        = data[:, :, useable]
     return data
+if __name__ == '__main__':
+    from h5py import File
+    with File('../Data/calibration_subject_4.hdf5') as f:
+        rawData = f['rawData'].value
+        events  = f['events'].value
+        cap     = f['cap'].value
+
+        test = stdPreproc(rawData,[0, 40], 250, cap)
+        plotERP(test, events, )

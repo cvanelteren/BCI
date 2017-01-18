@@ -21,17 +21,18 @@ def LogReg(data, events):
 
 
 def SVM(data, events, type = 'target'):
-    idxOfType = np.where(events[:, 0] == type)[0]
-    eventType = events[idxOfType, :]
-    dataType = data[idxOfType, :, :]
+    idxOfType       = np.where(events[:, 0] == type)[0]
+    eventType       = events[idxOfType, :]
+    dataType        = data[idxOfType, :, :]
 
-    reshapedDataType = dataType.reshape(dataType.shape[0], dataType.shape[1] *
+    reshapedDataType = dataType.reshape(dataType.shape[0],\
+                                        dataType.shape[1] *
                                         dataType.shape[2])
 
-    uniqueLabels = sorted(list(set(eventType[:, 1])))
-    label_to_int = dict((l, i) for i, l in enumerate(uniqueLabels))
-    int_to_char = dict((i, l) for i, l in enumerate(uniqueLabels))
-    convertedLabels = []
+    uniqueLabels         = sorted(list(set(eventType[:, 1])))
+    label_to_int         = dict((l, i) for i, l in enumerate(uniqueLabels))
+    int_to_char          = dict((i, l) for i, l in enumerate(uniqueLabels))
+    convertedLabels      = []
     for label in eventType[:, 1]:
         convertedLabels.append([label_to_int[label]])
 
@@ -50,65 +51,21 @@ def SVM(data, events, type = 'target'):
     return model, reshapedDataType, eventType
 
 
-def binarizeData(file, fSample):
-    with File(file, 'r') as f:
-        events = f['events'].value
-        data = f['processedData'].value
-
-    # make a mapper for the classifier
-    labels = np.zeros(2)
-    labels[0] = 1
-
-    # get the indices corresponding to the conditions
-    # events is ordered as [0] = type, [1] = value
-    targets = np.where(events[:, 0] == 'target')[0]
-    stimuli = np.where(events[:, 0] == 'stimulus')[0]
-
-    # make dataset for clasifier
-    timeAverage = np.mean(data, 1)
-    avgTarget = np.mean(timeAverage[targets, :], 0)
-    avgStimulus = np.mean(timeAverage[stimuli, :], 0)
-    cat = np.vstack((avgTarget, avgStimulus))
-
-    # plot the erps of the classes
-    tData = data[targets, :, :]
-    sData = data[stimuli, :, :]
-
-    erpTarget = np.mean(tData, 0)
-    erpStimulus = np.mean(sData, 0)
-
-    # plot classifier erps
-    fig, axs = subplots(erpTarget.shape[1], sharex='all')
-    time = np.arange(0, data.shape[1]) / float(fSample)
-    for i, ax in enumerate(axs):
-        # target
-        ax.plot(time, erpTarget[:, i],\
-        label   = 'class 1 ({0})'.format(tData.shape[0]))
-
-        # stimulus
-        ax.plot(time, erpStimulus[:, i],\
-        label   = 'class 0 ({0})'.format(sData.shape[0]))
-
-        # formatting
-        ax.legend(loc=0)
-        ax.set_xlabel('Time [s]')
-    fig.tight_layout()
-    # save the figure
-    savefig('../Figures/Classifier_output.png')
-    return erpTarget, erpStimulus, cat, labels
 
 
 if __name__ == '__main__':
     from h5py import File
-    with File('../Data/calibration_subject_4_LAB.hdf5') as f:
+    from preproc import  stdPreproc
+    with File('../Data/calibration_subject_4.hdf5') as f:
         for i in f:
             print(i)
         data = f['processedData'].value
         rawData = f['rawData'].value
         cap = f['cap'].value
         events = f['events'].value
-    model, reshapedData, tmp = SVM(rawData[:, :, :10], events)
-    modelERN, _, eventTarget = SVM(rawData[:, :, :10], events, type='feedback')
+
+    model, reshapedData, tmp = SVM(data, events)
+    modelERN, _, eventTarget = SVM(data, events, type='feedback')
 
     out = modelERN.predict(reshapedData)
     print(out[:5], eventTarget[:5, 1])

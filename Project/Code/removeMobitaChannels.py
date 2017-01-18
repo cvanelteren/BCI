@@ -1,6 +1,7 @@
 from h5py   import File
 import os
 from shutil import move
+from preproc import stdPreproc
 '''
 This is a temporary script to remove the number of channels from the
 data we already have.
@@ -15,8 +16,11 @@ def removeChannels(fileDir):
     with File(fileDir, 'r') as f:
         for i in f: print(i)
         rawData     = f['rawData'].value
-        procData    = f['processedData'].value
+        # procData    = f['processedData'].value
+        procData    = stdPreproc(rawData, [0, 60], 250)
+        print(procData.shape)
         caps        = f['cap'].value
+        events      = f['events'].value
 
     # only keep the first nChans
     nChans      = caps.shape[0]
@@ -25,8 +29,8 @@ def removeChannels(fileDir):
     # move file to backup
     move(fileDir, os.path.realpath('../Data/Backup/' + file))
     with File(newStorage,'w') as f:
-        labels = ['rawData', 'processedData','cap']
-        data   = [newData[0], newData[1], caps]
+        labels = ['rawData', 'processedData','cap', 'events']
+        data   = [newData[0], newData[1], caps, events]
         for label, datai in zip(labels, data):
             f.create_dataset(label, data = datai)
 
