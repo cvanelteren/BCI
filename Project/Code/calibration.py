@@ -1,4 +1,6 @@
 from __future__ import division
+import matplotlib
+matplotlib.use('TkAgg')
 from pylab import *
 
 #import sys

@@ -1,4 +1,6 @@
 from __future__ import division
+import matplotlib
+matplotlib.use('TkAgg')
 from pylab import *
 from subprocess import call
 
@@ -12,7 +14,7 @@ mainly related to visual and thus can be tweaked to whatever we like
 
 close('all')
 
-fig, ax = subplots(1,1)
+figg, ax = subplots(1,1)
 subplots_adjust(left=0, right=1, top=1, bottom=0)
 # from matplotlib import pyplot as plt
 mng = get_current_fig_manager()
@@ -44,12 +46,12 @@ def press(event):
     elif event.key == '2':
     	phase = 2
     elif event.key == 'escape':
-        global running
-        running = False
+        phase = 3
         
 def waitForKeyPress():
     global phase
     global returncode
+    global running
     phase = 0
     alpha = True
     while alpha:
@@ -59,6 +61,11 @@ def waitForKeyPress():
         elif phase == 2:
         	alpha = False
         	returncode = call(['python','Project/Code/CybathlonAdapter.py'])
+        elif phase == 3:
+            alpha = False
+            running = False
+            returncode = 42
+            plt.close(figg)
         pause(.1)
 
 # set background
@@ -67,10 +74,10 @@ ax.set_facecolor('black')
 ax.set_xticks([])
 ax.set_yticks([])
 
-fig.canvas.mpl_connect('key_press_event', press)
+figg.canvas.mpl_connect('key_press_event', press)
 
 # display welcome text
-# create a figure which is full screen in first place TODO
+# create a figgure which is full screen in first place TODO
 text = ax.text(0, 0,\
 'Welcome to the BCI Racer interface \n Press 1 to start the calibration\n Press 2 to start the race',\
 color = 'white',\
@@ -82,8 +89,3 @@ global returncode
 running = True
 while running:
     waitForKeyPress()
-    print(returncode)
-
-fig.clf()
-pause(1)
-close(fig)

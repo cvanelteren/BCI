@@ -3,6 +3,8 @@ bufferpath = "../../python/signalProc"
 import os, sys, random, math, time, socket, struct
 sys.path.append(os.path.dirname(__file__)+bufferpath)
 import bufhelp
+import matplotlib
+matplotlib.use('TkAgg')
 from pylab import *
 
 close('all')
