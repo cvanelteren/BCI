@@ -1,4 +1,4 @@
-from __future__ import division, print_function
+from __future__ import division
 import numpy as np
 import scipy.signal as signal
 from pylab import *
@@ -72,34 +72,33 @@ def butterFilter(data, band, N = 2, hdr = 100, dim = 1, filter_type = 'lowpass')
 
 import numpy as np
 
-def plotERP(binnedData, cap):
-    '''
-    Takes as input a dictionary mapping the event value to the corresponding data
-    Data should have format trials x time x channels
-    '''
-    erps  = []  # erp stoarage
-    label = []  # labels for plotting
-    # get the labels and erp data
-    for eventType, eventData in binnedData.iteritems():
-        label.append(eventType)
-        erps.append(mean(eventData, 0))
-    nChans = eventData.shape[-1]
-    erps = np.array(erps)
+def plotERP(data, events, cap = None,  title = None):
 
-    if nChans % 2 == 0:
-        nRows = nCols =  nChans / 2
+    types       = events[:, 1]
+    uTypes      = np.unique(types)
+    erp = np.zeros( ( len(uTypes), data.shape[1], data.shape[2] ) )
+    label = []
+    for idx, type in enumerate(uTypes):
+        findIt = np.where(types == type)[0]
+        # conditions = np.unique(types[findIt, 1])
+        # print(findIt)
+        label.append(type)
+        meaned =  np.mean(data[findIt, :, :], 0 )
+        # print(meaned.shape)
+        erp[idx, :, :] = meaned
+    if erp.shape[-1] % 2 == 0:
+        nRows = nCols =  erp.shape[-1] / 2
     else:
-        nRows = (nChans + 1) // 2
-    nCols = nChans// nRows
+        nRows = (erp.shape[-1] + 1) // 2
+    nCols = erp.shape[-1] // nRows
 
     fig, axs = subplots(nrows = int(nRows),
                         ncols = int(nCols), sharex = 'all', sharey = 'all')
     fig.add_subplot(111, frameon=False)
-
-    # plot erps per channel
     for idx, ax in enumerate(axs.flatten()):
-        [ax.plot(erp[:,idx]) for erp in erps]
-        ax.set_title(cap[idx, 0])  # first index is the name
+        ax.plot(erp[:, :, idx].T)
+        if cap != None:
+            ax.set_title(cap[idx,0])
 
 
     ax.legend(label, ncol = erp.shape[0],
@@ -109,25 +108,15 @@ def plotERP(binnedData, cap):
     xlabel(xlab, fontsize = 20)
     ylabel(ylab, fontsize = 20)
     tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
+    # tryouts:
     # fig.text(.05, .5, ylab, rotation = 90, fontsize = 20) # ylabel
     # fig.text(.5 - 1/(float(2*len(xlab))), .06, xlab, fontsize = 20)
     print(1/float(len(xlab)))
     # savefig('../Figures/ERP_Lisa.png')
     show()
 
-
-def eventSeparator(data, events):
-    '''
-    Returns dictionary of key = event value, item = data corresponding to key
-    '''
-    uniqueEvents  = np.unique(events[:, 1])
-    eventStorage = {}
-    for i, event in enumerate(uniqueEvents):
-        idx                   = np.where(events[:,1] == event)  # find corresponding indices
-        eventStorage[event]   = data[idx, :, :].squeeze()       # squeeze out the 0 dimension
-    return eventStorage
-
-
+def tfPlot(data, events, cap = None):
+    np.fft.fft(data, axis = 1)
 
 def car(data):
   '''
@@ -164,52 +153,32 @@ def stdPreproc(data, band,  hdr, cap = None):
             Removes bad channels
             Filters the data
     '''
-
+    global events
     data        = detrend(data)                 # detrend
     # plotERP(data, events, cap)
     data        = signal.detrend(data,          # demean
                                  axis = 2,
                                  type = 'constant')
     data        = car(data)                     # spatial filter
+    # plotERP(data, events, cap)
     data        = butterFilter(data,            # filter
                                band = band,
                                hdr = hdr)
 
+    plotERP(data, events, cap)
     useable     = badChannelRemoval(data)       # remove bad channels
-    print('Removing channels :\n', cap[useable == False])
+    print(useable)
 
-    data        = data[:, :, useable]           # remove the bad channels
+
+
+    data        = data[:, :, useable]
     return data
 if __name__ == '__main__':
-    from scipy import signal
     from h5py import File
     with File('../Data/calibration_subject_4.hdf5') as f:
         rawData = f['rawData'].value
         events  = f['events'].value
         cap     = f['cap'].value
 
-        procData = stdPreproc(rawData,[0, 100], 250, cap)
-
-        binnedData = eventSeparator(procData, events)
-        print(binnedData['feet'].shape)
-        plotERP(binnedData, cap)
-        # sizeOfWavelets = logspace(.1, 1.7, 20)
-        # tmp  = signal.cwt(test.flatten(), signal.ricker, sizeOfWavelets)
-        # tmp  = tmp.reshape(tmp.shape[0], test.shape[0], test.shape[1], test.shape[2])
-        #
-        # tmp  = eventSeparator(test, events)
-        # print(tmp)
-        # cond = 'left hand'
-        # tmpIdx = np.where(events[:,1] == cond)
-        # avgTmp = mean(tmp[:,tmpIdx, :, :], 2)
-        #
-        # fig, ax = subplots()
-        # cax = ax.imshow(avgTmp[:, 0, :, 5], origin = 'lower', extent = [0 , 150, min(sizeOfWavelets), max(sizeOfWavelets), ])
-        # ax.set_title(cond)
-        # ax.set_xlabel('Time [step]')
-        # ylabel('Frequency')
-        # colorbar(cax)
-        # show()
-
-
+        test = stdPreproc(rawData,[0, 100], 250, cap)
         # plotERP(test, events, )
