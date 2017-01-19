@@ -68,8 +68,6 @@ verticalalignment = 'center')
 
 waitForKeyPress()
 
-print('Lalallla')
-print(player)
 fig.canvas.draw()
 fig.clf()
 pause(1)
