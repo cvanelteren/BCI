@@ -43,7 +43,7 @@ def badChannelRemoval(data, x = 3):
     '''
     std = np.std(data)
     # filter with x standard deviations
-    events, time, badChans = np.where(abs(data) <  x * std)
+    events, time, badChans = np.where(abs(data) <  x * std) # bug fixed, i did the  reverse selection!
     # set all channels to useable
     useable = np.ones(data.shape[-1], dtype = bool)
 
@@ -110,7 +110,7 @@ def plotERP(data, events, cap,  title = None):
     # fig.text(.05, .5, ylab, rotation = 90, fontsize = 20) # ylabel
     # fig.text(.5 - 1/(float(2*len(xlab))), .06, xlab, fontsize = 20)
     print(1/float(len(xlab)))
-    savefig('../Figures/ERP_Lisa.png')
+    # savefig('../Figures/ERP_Lisa.png')
     show()
 
 
