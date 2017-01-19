@@ -34,8 +34,8 @@ def detrend(data, dim = 1, type = "linear"):
 
 
     X = signal.detrend(data, axis=dim)
-    return X
 
+    return X
 def badChannelRemoval(data, x = 3):
     '''
     assumes data is event, time, channels
@@ -81,8 +81,9 @@ def plotERP(binnedData, cap):
     label = []  # labels for plotting
     # get the labels and erp data
     for eventType, eventData in binnedData.iteritems():
-        label.append(eventType)
-        erps.append(mean(eventData, 0))
+        if eventType == 'negative' or eventType == 'positive':
+            label.append(eventType)
+            erps.append(mean(eventData, 0))
     nChans = eventData.shape[-1]
     erps = np.array(erps)
 
@@ -121,7 +122,7 @@ def eventSeparator(data, events):
     Returns dictionary of key = event value, item = data corresponding to key
     '''
     uniqueEvents  = np.unique(events[:, 1])
-    eventStorage = {}
+    eventStorage  = {}
     for i, event in enumerate(uniqueEvents):
         idx                   = np.where(events[:,1] == event)  # find corresponding indices
         eventStorage[event]   = data[idx, :, :].squeeze()       # squeeze out the 0 dimension
@@ -167,49 +168,98 @@ def stdPreproc(data, band,  hdr, cap = None):
 
     data        = detrend(data)                 # detrend
     # plotERP(data, events, cap)
-    data        = signal.detrend(data,          # demean
+    data        = signal.detrend(data,          # re-referencing
                                  axis = 2,
                                  type = 'constant')
+    data        = signal.detrend(data,
+                                 axis = 1,
+                                 type = 'constant') # demean
     data        = car(data)                     # spatial filter
-    data        = butterFilter(data,            # filter
+    data        = butterFilter(data,            # temporal filter
                                band = band,
                                hdr = hdr)
 
     useable     = badChannelRemoval(data)       # remove bad channels
-    print('Removing channels :\n', cap[useable == False])
+    if cap != None:
+        print('Removing channels :\n', cap[useable == False])
 
     data        = data[:, :, useable]           # remove the bad channels
     return data
+
+def rickerWavelet(binnedData, nWavelet = 20):
+    sizeOfWavelets = logspace(.1, 1.7, nWavelet) # this goes to about 50 hz, more weighting on the lower end
+    convolutedData = {}
+    for type, data in binnedData.iteritems():
+        cw = signal.cwt(data.flatten(), signal.ricker, sizeOfWavelets)
+        cw = cw.reshape(cw.shape[0], data.shape[0], data.shape[1], data.shape[2])   # algorithm expects 1 d array
+        convolutedData[type] = cw                                                  # reshape back
+
+    # make figure for negative positive
+    fig, axs = subplots(5,2)
+    for i, (ax, sensor) in enumerate(zip(axs.flatten(), cap)):
+        pos = convolutedData['positive'][:, :, i]
+        neg = convolutedData['negative'][:, :, i]
+        pos = mean(pos, 1)
+        neg = mean(neg, 1)
+        im  = ax.imshow( (pos - neg), origin = 'lower',
+                  extent = [0, 150, sizeOfWavelets[0], sizeOfWavelets[-1]])
+        # print(im)
+        colorbar(im, ax = ax)# cax = ax)
+        ax.set_title(sensor[0])
+    subplots_adjust(hspace = .5)
+
+    labels = ['feet', 'left hand', 'right hand', 'rest']
+    # make figure for negative positive
+    fig, axs = subplots(5,2)
+    fig.add_subplot(111)
+    for i, (ax, sensor) in enumerate(zip(axs.flatten(), cap)):
+        feet      = convolutedData['feet'][:, :, i]
+        leftHand  = convolutedData['left hand'][:, :, i]
+        rightHand = convolutedData['right hand'][:, :, i]
+        rest      = convolutedData['rest'][:, :, i]
+
+
+        feet = mean(feet, 1)
+        leftHand = mean(leftHand, 1)
+        rightHand  = mean(rightHand, 1)
+        rest      = mean(rest, 1)
+        data = [feet, leftHand, rightHand, rest]
+        for idx, datai in enumerate(data):
+            ax.plot(datai[:,i])
+
+        ax.set_title(sensor[0])
+    ax.legend(labels, ncol = len(labels),
+            loc = 'upper center', bbox_to_anchor = (-.15, -.5)) # centers under all subplots
+    ylab = 'mV'
+    xlab = 'Time[step]'
+    xlabel(xlab, fontsize = 20)
+    ylabel(ylab, fontsize = 20)
+    tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
+    subplots_adjust(hspace = .5)
+    show()
+
+
+
+
+
+
+
 if __name__ == '__main__':
     from scipy import signal
     from h5py import File
     with File('../Data/calibration_subject_4.hdf5') as f:
         rawData = f['rawData'].value
+        procData = f['processedData'].value
         events  = f['events'].value
         cap     = f['cap'].value
 
-        procData = stdPreproc(rawData,[0, 100], 250, cap)
+        procData = stdPreproc(rawData,[0, 40], 250, cap)
 
         binnedData = eventSeparator(procData, events)
-        print(binnedData['feet'].shape)
         plotERP(binnedData, cap)
-        # sizeOfWavelets = logspace(.1, 1.7, 20)
-        # tmp  = signal.cwt(test.flatten(), signal.ricker, sizeOfWavelets)
-        # tmp  = tmp.reshape(tmp.shape[0], test.shape[0], test.shape[1], test.shape[2])
-        #
-        # tmp  = eventSeparator(test, events)
-        # print(tmp)
-        # cond = 'left hand'
-        # tmpIdx = np.where(events[:,1] == cond)
-        # avgTmp = mean(tmp[:,tmpIdx, :, :], 2)
-        #
-        # fig, ax = subplots()
-        # cax = ax.imshow(avgTmp[:, 0, :, 5], origin = 'lower', extent = [0 , 150, min(sizeOfWavelets), max(sizeOfWavelets), ])
-        # ax.set_title(cond)
-        # ax.set_xlabel('Time [step]')
-        # ylabel('Frequency')
-        # colorbar(cax)
-        # show()
+        print(binnedData['feet'].shape)
+        # plotERP(binnedData, cap)
+        # rickerWavelet(binnedData)
 
 
         # plotERP(test, events, )

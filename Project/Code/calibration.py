@@ -6,7 +6,7 @@ from pylab import *
 
 # PARAMETERS
 # prespecified number of targets
-nTrials = 60
+nTrials = 1 # 60
 # timestep
 tmp = .1
 # controls how long to show a target (is multiplied with tmp)
@@ -55,7 +55,7 @@ def press(event):
     '''
     looks for key press events
     '''
-    # get the global start variable
+    # get the global start variablelen(capFile)  #
     global start
     # look for key event
     print('press', event.key)

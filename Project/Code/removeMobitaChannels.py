@@ -17,7 +17,7 @@ def removeChannels(fileDir):
         for i in f: print(i)
         rawData     = f['rawData'].value
         # procData    = f['processedData'].value
-        procData    = stdPreproc(rawData, [0, 60], 250)
+        procData    = stdPreproc(rawData, [0, 40], 250)
         print(procData.shape)
         caps        = f['cap'].value
         events      = f['events'].value
@@ -38,7 +38,7 @@ def removeChannels(fileDir):
 
 
 
-removeChannels('../Data/calibration_subject_4_LAB.hdf5')
+removeChannels('../Data/calibration_subject_5_LAB.hdf5')
 
 # sanity check
 # with File('../Data/calibration_subject_5.hdf5') as f :

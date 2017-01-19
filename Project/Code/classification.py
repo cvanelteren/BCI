@@ -40,6 +40,7 @@ def SVM(data, events, type = 'target'):
 
     test = MultiLabelBinarizer().fit_transform(tmp)
 
+
     # print(test)
     # print(eventType[:,1])
     from sklearn import svm
@@ -56,7 +57,7 @@ def SVM(data, events, type = 'target'):
 if __name__ == '__main__':
     from h5py import File
     from preproc import  stdPreproc
-    with File('../Data/calibration_subject_4.hdf5') as f:
+    with File('../Data/calibration_subject_5.hdf5') as f:
         for i in f:
             print(i)
         data = f['processedData'].value
@@ -64,11 +65,11 @@ if __name__ == '__main__':
         cap = f['cap'].value
         events = f['events'].value
 
-    model, reshapedData, tmp = SVM(data, events)
-    modelERN, _, eventTarget = SVM(data, events, type='feedback')
+    # model, reshapedData, tmp = SVM(data, events)
+    modelERN, reshapedData, eventTarget = SVM(data, events, type='feedback')
 
-    out = modelERN.predict(reshapedData)
-    print(out[:5], eventTarget[:5, 1])
+    out = modelERN.predict_proba(reshapedData)
+    print(out) # eventTarget[:, 1])
     idx = 20
     # print(out[:idx], tmp[:idx,1])
     fig, ax = subplots()
