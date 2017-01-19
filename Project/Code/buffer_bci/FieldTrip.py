@@ -66,7 +66,7 @@ wordSize = [1,1,2,4,8,1,2,4,8,4,8]
 # float32   11           9
 # float64   12           10
 
-dataType = [-1, 5, 1, 6, 2, 7, 3, 8, 4, -1, -1, 9, 10]
+dataTypesList = [-1, 5, 1, 6, 2, 7, 3, 8, 4, -1, -1, 9, 10]
 
 try:
     import numpy
@@ -77,9 +77,12 @@ try:
             return DATATYPE_CHAR
         if isinstance(A, numpy.ndarray):
             dt = A.dtype
-            if not(dt.isnative) or dt.num<1 or dt.num>=len(dataType):
+            print(dt.num)
+            print(dataTypesList)
+
+            if not(dt.isnative) or dt.num<1 or dt.num>=len(dataTypesList):
                 return DATATYPE_UNKNOWN
-            ft = dataType[dt.num]
+            ft = dataTypesList[dt.num]
             if ft == -1:
                 return DATATYPE_UNKNOWN
             else:
@@ -108,14 +111,17 @@ try:
                 elif dt0==DATATYPE_FLOAT32:
                     return (dt0, struct.pack('f'*len(A), *A))
                 elif dt0==DATATYPE_FLOAT64:
+                    print(A)
+                    print(A[0].dtype)
+                    print('d'*len(A))
                     return (dt0, struct.pack('d'*len(A), *A))
 
         if isinstance(A, numpy.ndarray):
             dt = A.dtype
-            if not(dt.isnative) or dt.num<1 or dt.num>=len(dataType):
+            if not(dt.isnative) or dt.num<1 or dt.num>=len(dataTypesList):
                 return (DATATYPE_UNKNOWN, None)
 
-            ft = dataType[dt.num]
+            ft = dataTypesList[dt.num]
             if ft == -1:
                 return (DATATYPE_UNKNOWN, None)
 
@@ -309,10 +315,10 @@ class Event:
         # assert 0
         # original:
         # my code
-        t = S + bytearray(type_buf, 'UTF8') + bytearray(value_buf,'UTF8')
+        #t = S + bytearray(type_buf, 'UTF8') + bytearray(value_buf,'UTF8')
         # original:
-        # return S + type_buf + value_buf
-        return t
+        return S + type_buf + value_buf
+        #return t
 
 
 class Client:
@@ -418,7 +424,7 @@ class Client:
 
         return H
 
-    def putHeader(self, nChannels, fSample, dataType, labels = None, chunks = None):
+    def putHeader(self, nChannels, fSample, datatype, labels = None, chunks = None):
         haveLabels = False
         extras = ''
         if not(labels is None):
@@ -441,7 +447,7 @@ class Client:
 
         sizeChunks = len(extras)
 
-        hdef = struct.pack('IIIfII', nChannels, 0, 0, fSample, dataType, sizeChunks)
+        hdef = struct.pack('IIIfII', nChannels, 0, 0, fSample, datatype, sizeChunks)
         request = struct.pack('HHI', VERSION, PUT_HDR, sizeChunks + len(hdef)) + hdef + extras
         self.sendRaw(request)
         (status, bufsize, resp_buf) = self.receiveResponse()
@@ -560,12 +566,12 @@ class Client:
 
         (nSamp, nChan) = arraysize(D)
 
-        (dataType, dataBuf) = serialize(D)
+        (datatype, dataBuf) = serialize(D)
 
         dataBufSize = len(dataBuf)
 
         request = struct.pack('HHI', VERSION, PUT_DAT, 16+dataBufSize)
-        dataDef = struct.pack('IIII', nChan, nSamp, dataType, dataBufSize)
+        dataDef = struct.pack('IIII', nChan, nSamp, datatype, dataBufSize)
         self.sendRaw(request + dataDef + dataBuf )
 
         (status, bufsize, resp_buf) = self.receiveResponse()

@@ -8,7 +8,7 @@ from pylab import *
 
 # PARAMETERS
 # prespecified number of targets
-nTrials = 1 # 60
+nTrials = 3 # 60
 # timestep
 tmp = .1
 # controls how long to show a target (is multiplied with tmp)
@@ -18,7 +18,7 @@ feedback_duration = 10
 # controls how long to do nothing
 rest_duration = 15
 # proportion of negative feedback given
-proportion_negative = 0.33
+proportion_negative = 1/3
 '''
 Note to reader; there are some random numbers in this script; these are
 mainly related to visual and thus can be tweaked to whatever we like
@@ -90,7 +90,7 @@ ax.set_yticks([])
 nCond = len(circleLabels)
 
 # create feedback vector
-cutoff                      = nTrials * proportion_negative
+cutoff                      = round(nTrials * proportion_negative)
 give_feedback               = np.zeros((nTrials), dtype=int)
 give_feedback[:int(cutoff)] = 1
 np.random.shuffle(give_feedback)

@@ -6,6 +6,7 @@ import bufhelp
 import matplotlib
 matplotlib.use('TkAgg')
 from pylab import *
+import pickle
 
 close('all')
 
@@ -13,26 +14,27 @@ def press(event):
     '''
     looks for key press events
     '''
-    # get the global player variable
-    global player
+    # get the global choice variable
+    global choice
     # look for key event
     print('press', event.key)
-    # spacebar is registered as ' ' for some reason
     if event.key == '1':
-        player = 1
+        choice = 1
     elif event.key == '2':
-        player = 2
+        choice = 2
     elif event.key == '3':
-        player = 3
+        choice = 3
     elif event.key == '4':
-        player = 4
+        choice = 4
+    elif event.key == ' ':
+    	choice = 5
 
 def waitForKeyPress():
-    global player
-    player = 0
+    global choice
+    choice = 0
     alpha = True
     while alpha:
-        if player != 0:
+        if choice != 0:
         	break
         pause(.1)
 
@@ -62,30 +64,34 @@ ax.set_yticks([])
 
 fig.canvas.mpl_connect('key_press_event', press)
 
-text = ax.text(0, 0,\
-'Please choose the player you are using:\n Press 1 for Player 1\n Press 2 for Player 2\n Press 3 for Player 3\n Press 4 for Player 4',\
-color = 'white',\
-horizontalalignment = 'center',\
-verticalalignment = 'center')
+while ((choice < 1) or (choice > 4)):
+	text = ax.text(0, 0,\
+	'Please choose the player you are using:\n Press 1 for Player 1\n Press 2 for Player 2\n Press 3 for Player 3\n Press 4 for Player 4',\
+	color = 'white',\
+	horizontalalignment = 'center',\
+	verticalalignment = 'center')
 
-waitForKeyPress()
+	waitForKeyPress()
 
-fig.canvas.draw()
-fig.clf()
-pause(1)
-close(fig)
+# Save player number
+player = choice
+choice = 0
+ax.cla()
 
-# Configuration of buffer
-buffer_hostname='localhost'
-buffer_port=1972
+while ((choice < 1) or (choice > 2)):
+	text_str = 'Which version do you want to play?\n Press 1 for Imagined Movement \n Press 2 for Imagined Movement Plus'
 
-# Configuration of BrainRacer
-br_hostname='localhost'
-br_port=5555
-br_player=1
+	text                = ax.text(0, 0,text_str,\
+	color               = 'white',\
+	horizontalalignment = 'center',\
+	verticalalignment   = 'center')
 
-global second_pred
-second_pred = None
+	waitForKeyPress()
+
+# Save version number
+version = choice
+choice = 0
+ax.cla()
 
 # Command offsets, do not change.
 if player == 1: 
@@ -107,8 +113,48 @@ elif player ==4:
 CMD_RST  = 99 # if sth unrecognizable is sent, it will ignore it
 
 # Command configuration
-CMDS      = [CMD_ROLL, CMD_RST, CMD_JUMP, CMD_SPEED]
-THRESHOLDS= [.1,        .1,       .1,     .1      ]
+CMDS      = [CMD_ROLL, CMD_JUMP, CMD_SPEED, CMD_RST]
+verbCMDS  = ['Roll','Jump','Speed','Rest']
+# THRESHOLDS= [.1,        .1,       .1,     .1      ]
+THRESHOLDS= [.025,        .025,       .025,     .025      ]
+
+# Load dictionaries containing int to label mapping for movement and label to int mapping for ern
+i2l = pickle.load(open('Project/Code/i2l_im.pkl','rb'))
+l2i = pickle.load(open('Project/Code/l2i_ern.pkl','rb'))
+
+# Probably introduce instructions here
+while (choice < 5):
+	text_str = 'Instructions: \n\n ' + verbCMDS[0] + ' command will executed when thinking about your ' + i2l[0] + \
+	'\n ' + verbCMDS[1] + ' command will executed when thinking about your ' + i2l[1] + \
+	'\n ' + verbCMDS[2] + ' command will executed when thinking about your ' + i2l[2] + \
+	'\n ' + verbCMDS[3] + ' command will executed when thinking about your ' + i2l[3] + \
+	'\n\n Press space to start'
+
+	text                = ax.text(0, 0,text_str,\
+	color               = 'white',\
+	horizontalalignment = 'center',\
+	verticalalignment   = 'center')
+
+	waitForKeyPress()
+choice = 0
+ax.cla()
+
+fig.canvas.draw()
+fig.clf()
+pause(1)
+close(fig)
+
+# Configuration of buffer
+buffer_hostname='localhost'
+buffer_port=1972
+
+# Configuration of BrainRacer
+br_hostname='localhost'
+br_port=5555
+br_player=player
+
+global second_pred
+second_pred = None
 
 # Sends a command to BrainRacer.
 def send_command(command):
@@ -127,6 +173,10 @@ br_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
 print("Connected to " + buffer_hostname + ":" + str(buffer_port))
 print(hdr)
 
+print(version)
+
+bufhelp.sendEvent('start', 'test')
+
 def max2(numbers):
     i1 = i2 = None
     m1 = m2 = float('-inf')
@@ -144,7 +194,7 @@ def max2(numbers):
 def processBufferEvents():
 	global running
 	events = bufhelp.buffer_newevents()
-
+	nChans = 0
 	for evt in events:
 		print(str(evt.sample) + ": " + str(evt))
 
@@ -153,14 +203,16 @@ def processBufferEvents():
 			(m12,i12) = max2(pred) # find max value
 			second_pred = i12[1]
 			if m12[0]-m12[1] > THRESHOLDS[i12[0]] : send_command(CMDS[i12[0]]); # if above threshold send
-		
+
 		elif evt.type == 'clsfr.prediction.ern':
-			pred = evt.value
-			(m12,i12) = max2(pred) # find max value
-			# TODO
-			# valid prediction of ERN
-			if m12[0]-m12[1] > 0.1:
-				send_command(CMDS[second_pred]);
+			# Only use if version was set to be IM +
+			if version == 2:
+				pred = evt.value
+				(m12,i12) = max2(pred) # find max value
+				idxERN = l2i['negative']
+				print('Idx nega ', idxERN, ' idx max ', i12[0])
+				if (i12[0] == idxERN) and (m12[0]-m12[1] > 0.025) and (second_pred is not None):
+					send_command(CMDS[second_pred]);
 
 		elif evt.type == 'keyboard':
 			if   evt.value == 'q' :  send_command(CMD_SPEED)

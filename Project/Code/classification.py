@@ -5,6 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 from h5py import File
+import pickle
 from pylab import *
 
 
@@ -20,7 +21,7 @@ def LogReg(data, events):
     return lr
 
 
-def SVM(data, events, type = 'target'):
+def SVM(data, events, type = 'target', string='default'):
     idxOfType       = np.where(events[:, 0] == type)[0]
     eventType       = events[idxOfType, :]
     dataType        = data[idxOfType, :, :]
@@ -31,7 +32,13 @@ def SVM(data, events, type = 'target'):
 
     uniqueLabels         = sorted(list(set(eventType[:, 1])))
     label_to_int         = dict((l, i) for i, l in enumerate(uniqueLabels))
-    int_to_char          = dict((i, l) for i, l in enumerate(uniqueLabels))
+    int_to_label          = dict((i, l) for i, l in enumerate(uniqueLabels))
+
+    filepath_l2i = 'l2i_' + string +'.pkl'
+    filepath_i2l = 'i2l_' + string +'.pkl'
+    pickle.dump(label_to_int,open(filepath_l2i,'wb'))
+    pickle.dump(int_to_label,open(filepath_i2l,'wb'))
+
     convertedLabels      = []
     for label in eventType[:, 1]:
         convertedLabels.append([label_to_int[label]])
