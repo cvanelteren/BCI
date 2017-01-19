@@ -43,17 +43,16 @@ def badChannelRemoval(data, x = 3):
     '''
     std = np.std(data)
     # filter with x standard deviations
-    print(std)
-    events, time, bad_chans = np.where(abs(data) >  x * std)
+    events, time, badChans = np.where(abs(data) <  x * std)
     # set all channels to useable
     useable = np.ones(data.shape[-1], dtype = bool)
 
     # if there is an outlier dont use that channel
-    useable[np.unique(bad_chans)] = False
+    useable[np.unique(badChans)] = True
     return useable
 
 
-def butterFilter(data, band, N = 5, hdr = 100, dim = 1, filter_type = 'lowpass'):
+def butterFilter(data, band, N = 2, hdr = 100, dim = 1, filter_type = 'lowpass'):
     '''
     Simple butter worth filter
     filter defaults to the first axis (assumes time)
@@ -67,7 +66,7 @@ def butterFilter(data, band, N = 5, hdr = 100, dim = 1, filter_type = 'lowpass')
         filter_type = 'bandpass'
 
     b, a = signal.butter(N = N, Wn = band, btype = filter_type)
-    fdata = signal.filtfilt(b,a, data, axis = dim)
+    fdata = signal.filtfilt(b,a, data, method = 'gust', axis = dim)
     return fdata
 
 
@@ -93,12 +92,25 @@ def plotERP(data, events, cap,  title = None):
         nRows = (erp.shape[-1] + 1) // 2
     nCols = erp.shape[-1] // nRows
 
-    fig, axs = subplots(nrows = int(nRows), ncols = int(nCols), sharex = 'all')
+    fig, axs = subplots(nrows = int(nRows),
+                        ncols = int(nCols), sharex = 'all', sharey = 'all')
+    fig.add_subplot(111, frameon=False)
     for idx, ax in enumerate(axs.flatten()):
         ax.plot(erp[:, :, idx].T)
-        ax.legend(label, loc = 0)
         ax.set_title(cap[idx,0])
 
+
+    ax.legend(label, ncol = erp.shape[0],
+            loc = 'upper center', bbox_to_anchor = (-.15, -.5)) # centers under all subplots
+    ylab = 'mV'
+    xlab = 'Time[step]'
+    xlabel(xlab, fontsize = 20)
+    ylabel(ylab, fontsize = 20)
+    tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
+    # fig.text(.05, .5, ylab, rotation = 90, fontsize = 20) # ylabel
+    # fig.text(.5 - 1/(float(2*len(xlab))), .06, xlab, fontsize = 20)
+    print(1/float(len(xlab)))
+    savefig('../Figures/ERP_Lisa.png')
     show()
 
 
@@ -138,15 +150,21 @@ def stdPreproc(data, band,  hdr, cap = None):
             Filters the data
     '''
     global events
-    data        = detrend(data)
+    data        = detrend(data)                 # detrend
     # plotERP(data, events, cap)
-    # data        = np.array([data[i, :, :] - mean(data[i,:,:], 0) for i in range(data.shape[0])])
-    data        = signal.detrend(data, axis = 2, type = 'constant')
+    data        = signal.detrend(data,          # demean
+                                 axis = 2,
+                                 type = 'constant')
+    data        = car(data)                     # spatial filter
+    # plotERP(data, events, cap)
+    data        = butterFilter(data,            # filter
+                               band = band,
+                               hdr = hdr)
+
     plotERP(data, events, cap)
-    data        = butterFilter(data, band = band, hdr = hdr)
-    data        = car(data)
-    useable     = badChannelRemoval(data)
-    print(np.mean(data,0))
+    useable     = badChannelRemoval(data)       # remove bad channels
+    print(useable)
+
 
 
     data        = data[:, :, useable]
@@ -158,5 +176,5 @@ if __name__ == '__main__':
         events  = f['events'].value
         cap     = f['cap'].value
 
-        test = stdPreproc(rawData,[0, 40], 250, cap)
-        plotERP(test, events, )
+        test = stdPreproc(rawData,[0, 100], 250, cap)
+        # plotERP(test, events, )
