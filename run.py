@@ -49,15 +49,16 @@ def press(event):
         
 def waitForKeyPress():
     global phase
+    global returncode
     phase = 0
     alpha = True
     while alpha:
         if phase == 1:
             alpha = False
-            call(['python','Project/Code/calibration.py'])
+            returncode = call(['python','Project/Code/calibration.py'])
         elif phase == 2:
         	alpha = False
-        	call(['python','Project/Code/CybathlonAdapter.py'])
+        	returncode = call(['python','Project/Code/CybathlonAdapter.py'])
         pause(.1)
 
 # set background
@@ -77,9 +78,11 @@ horizontalalignment = 'center',\
 verticalalignment = 'center')
 
 global running
+global returncode
 running = True
 while running:
     waitForKeyPress()
+    print(returncode)
 
 fig.clf()
 pause(1)
