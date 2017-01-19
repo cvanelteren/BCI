@@ -3,6 +3,9 @@ from    h5py                import File, special_dtype
 from    pylab               import *
 from    systemHelper        import checkOverwrite
 
+import warnings
+# with warnings.catch_warnings():
+# warnings.filterwarnings('ignore')
 
 import  classification, preproc, bufhelp, os
 import  numpy as np
@@ -19,7 +22,7 @@ nChans      = 4
 # SET THE SUBJECT NUMBER
 dataDir        = '../Data/'                 # storage of directory
 conditionType  = 'calibration_subject_'     # calibration file
-subjectNumber  =  4                         # subject number
+subjectNumber  =  1                         # subject number
 
 # storage file
 fileCalibration = dataDir + conditionType + str(subjectNumber) + '.hdf5'
@@ -77,6 +80,7 @@ while run:
             with File(fileCalibration, 'r') as f:
                 ev       = f['events'].value
                 procData = f['processedData'].value
+            print(procData.shape)
             modelMovement = classification.SVM(procData, ev, type = 'target')[0]
             modelERN      = classification.SVM(procData, ev, type = 'feedback')[0]
 
@@ -91,6 +95,7 @@ while run:
             # PARAMETERS
             plotTime = 3
             nPoints  = int((trlen_ms/1e3) / dt)
+            print(hdr.fSample)
             # timeSec = linspace(-nPoints, 0, nPoints)
             print(nPoints)
             weighting = np.array(range(int(3/dt),-1,1))
@@ -98,26 +103,32 @@ while run:
             while keep:
                 bufferStorage = zeros((nPoints, nChans))
                 # get latest samples and plot them
-                tic = t = tt =   time.time()
+                tic = t  =  time.time()
                 preds = []
-                while t < plotTime:
+                i = 1
+                while abs(tic - time.time()) < plotTime:
                     idx = ftc.getHeader().nSamples  - 1
                     lastSample =  ftc.getData((idx,idx))
                     bufferStorage            = roll(bufferStorage, 0)
                     bufferStorage[-1, :]     = lastSample
-                    print(t)
+
                     if  t > trlen_ms / 1e3:
+                        bufferStorage = np.array(bufferStorage.flatten(), ndmin = 2 )
                         pred = modelMovement.predict_proba(bufferStorage) # prediction
-                        preds.append(pred)
+                        preds.append([pred])
                         bufferStorage = zeros((nPoints, nChans)) # flush
+                        i += 1
                     t = time.time() - tic
-                    print(t)
-                preds = np.array(preds)
-                preds /= weighting
-                print(preds)
-                preds = np.argmax(preds, axis = 0)
-                bufhelp.sendEvent('clsf.prediction.im', preds)
-                print(preds)
+
+                preds = np.array(preds).squeeze()
+                keep = False
+
+
+                preds /= weighting / i
+                idx = np.argmax(preds, axis = 0)
+                bufhelp.sendEvent('clsf.prediction.im', preds[idx,:])
+                # print(preds[idx,:])
+                # assert 0
 
 
 

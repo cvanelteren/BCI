@@ -67,8 +67,10 @@ if __name__ == '__main__':
 
     # model, reshapedData, tmp = SVM(data, events)
     modelERN, reshapedData, eventTarget = SVM(data, events, type='feedback')
+    # tmp = np.array(reshapedData[0,:], ndmin)
+    out = modelERN.predict_proba(reshapedData[[0],:])
 
-    out = modelERN.predict_proba(reshapedData)
+
     print(out) # eventTarget[:, 1])
     idx = 20
     # print(out[:idx], tmp[:idx,1])
