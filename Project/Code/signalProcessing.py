@@ -25,7 +25,7 @@ nChans      = len(capFile)  # mobita outputs 37, redundant channels remove them
 # SET THE SUBJECT NUMBER
 dataDir        = '../Data/'                 # storage of directory
 conditionType  = 'calibration_subject_'     # calibration file
-subjectNumber  =  100                         # subject number
+subjectNumber  =  4                         # subject number
 
 # storage file
 fileCalibration = dataDir + conditionType + str(subjectNumber) + '.hdf5'
@@ -84,9 +84,19 @@ while run:
             with File(fileCalibration, 'r') as f:
                 ev       = f['events'].value
                 procData = f['processedData'].value
-            print(procData.shape)
-            modelMovement = classification.SVM(procData, ev, type = 'target',string='im')[0]
+
+            restCondition = np.where(ev == 'rest')[1]
+            useIdx  = len(restCondition) / 3
+            np.random.shuffle(restCondition)
+            restCondition = restCondition[useIdx:]
+            useThese = np.zeros((procData.shape[0]))
+            useThese[restCondition] = 1
+            number = classification.stupidFct()
+            print(number)
+            modelMovement, rD = classification.SVM(\
+            procData[useThese == 0, :], ev[useThese==0,:], type = 'target',string='im')[0:2]
             modelERN      = classification.SVM(procData, ev, type = 'feedback',string='ern')[0]
+            print(modelMovement)
 
             bufhelp.sendEvent("training", "done")
 
@@ -104,51 +114,80 @@ while run:
             # print(nPoints)
 
             keep = True
+            i = 0
+            j = 0
+            k = 0
+            bufferStorage = zeros((nPoints, nChans))
             while keep:
-                bufferStorage = zeros((nPoints, nChans))
                 # print(bufferStorage.shape, nChans)
                 # get latest samples and plot them
                 tic = t  =  time.time()
                 predsIM = []
                 predsERN = []
-                i = 0
+                # dd = []
+                idx = ftc.getHeader().nSamples- 1
+                lastSample1 = ftc.getData((idx, idx))
                 while abs(tic - time.time()) < plotTime:
+                    j += 1
+                    pause(0.01)
                     idx = ftc.getHeader().nSamples  - 1
-                    lastSample =  ftc.getData((idx,idx))
-                    bufferStorage            = roll(bufferStorage, -1, 0)
-                    # print(lastSample.shape)
-                    bufferStorage[-1, :]     = lastSample[0, :nChans]
-                    # print(bufferStorage[-2,:])
-                    pause(.01)
-                    # i+= 1
-                    if  t > trlen_ms / 1e3:
-                        bufferStorage = detrend(bufferStorage, 0, type = 'linear')
-                        bufferStorage = detrend(bufferStorage, 0, type = 'constant')
-                        # bufferStorage = np.array(bufferStorage.flatten(), ndmin = 2 )
-                        pred = modelMovement.predict_proba(bufferStorage.reshape(bufferStorage.shape[0] * bufferStorage.shape[1])) # prediction
-                        predsIM.append([pred])
-                        pred = modelERN.predict_proba(bufferStorage.reshape(bufferStorage.shape[0] * bufferStorage.shape[1])) # prediction
-                        predsERN.append([pred])
-                        # bufferStorage = zeros((nPoints, nChans)) # flush
-                        i += 1
-                    t = time.time() - tic
+                    lastSample2 =  ftc.getData((idx,idx))
+                    if not all(lastSample1 == lastSample2):
+                        k += 1
+                        lastSample1 = lastSample2
 
-                predsIM = np.array(predsIM).squeeze()
-                print(predsIM)
-                predsERN = np.array(predsERN).squeeze()
-                weightingIM = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
-                weightingERN = np.arange(start=predsERN.shape[0]+1,stop=1,step=-1)[:,None]
+                        bufferStorage            = np.roll(bufferStorage, -1, 0)
+                        bufferStorage[-1, :]     = lastSample1[0, :nChans]
+                        #print('-')
+                        #print(bufferStorage)
+                        # print(bufferStorage[-2,:])
+                        pause(0.01)
+                        # i+= 1
+                        if  t > trlen_ms / 1e3:
+                            tmp = detrend(bufferStorage, 0, type = 'linear')
+                            tmp = detrend(tmp, 0, type = 'constant')
+                            #tmp  = bufferStorage
+                            # bufferStorage = np.array(bufferStorage.flatten(), ndmin = 2 )
+                            tmp = tmp.reshape(bufferStorage.shape[0] * bufferStorage.shape[1])[None,:]
+                            print(tmp[0])
+                            print(tmp.shape)
+                            pred = modelMovement.predict_proba(tmp) # prediction
 
-                predsIM /= weightingIM
-                predsERN /= weightingERN
+                            predsIM.append([pred])
+                            pred = modelERN.predict_proba(tmp) # prediction
+                            predsERN.append([pred])
+                            # bufferStorage = zeros((nPoints, nChans)) # flush
+                            i += 1
+                        #dd.append(bufferStorage)
+                        print('====')
+                        #print(bufferStorage)
+                        #if i > 3:
+                        #    assert 0
+                        t = time.time() - tic
+                        # print(predsIM)
+                        if (len(predsIM) > 10):
+                            predsIM = np.array(predsIM).squeeze()
+                            print(predsIM.shape)
+                            # print(predsIM[0,0])
+                            predsERN = np.array(predsERN).squeeze()
+                            weightingIM = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
+                            weightingERN = np.arange(start=predsERN.shape[0]+1,stop=1,step=-1)[:,None]
 
-                maxPredIM = np.max(predsIM, axis = 0)
-                maxPredERN = np.max(predsERN, axis = 0)
-                # print('>', maxPredIM)
-                bufhelp.sendEvent('clsfr.prediction.im', maxPredIM)
-                bufhelp.sendEvent('clsfr.prediction.ern', maxPredERN)
-                #bufhelp.sendEvent('clsfr.prediction.im', pred)
-
+                            # predsIM     *= weightingIM
+                            # predsERN    *= weightingERN
+                            print(predsIM)
+                            maxPredIM = 0
+                            maxPredERN = 0
+                            #maxPredIM = np.max(predsIM, axis = 0)
+                            #maxPredERN = np.max(predsERN, axis = 0)
+                            # print('>', maxPredIM)
+                            bufhelp.sendEvent('clsfr.prediction.im', maxPredIM)
+                            bufhelp.sendEvent('clsfr.prediction.ern', maxPredERN)
+                            #bufhelp.sendEvent('clsfr.prediction.im', pred)
+                            predsIM = []
+                            predsERN = []
+                    # if different sample
+                # while 3 seconds loop
         elif e.value == "exit":
             run = False
         # print(e.value)

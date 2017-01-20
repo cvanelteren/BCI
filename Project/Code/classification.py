@@ -7,7 +7,10 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from h5py import File
 import pickle
 from pylab import *
+from preproc import stdPreproc
 
+def stupidFct():
+    return 42
 
 def trainClassifier(file, fSample):
     erpTarget, erpStimulus, cat, labels = binarizeData(file, fSample)
@@ -46,16 +49,14 @@ def SVM(data, events, type = 'target', string='default'):
     tmp = np.array(convertedLabels)
 
     test = MultiLabelBinarizer().fit_transform(tmp)
+    print(test.shape)
 
-
-    # print(test)
-    # print(eventType[:,1])
     from sklearn import svm
-    model = OneVsRestClassifier(
-        svm.SVC(class_weight='balanced', probability=1))
+    # model = OneVsRestClassifier(svm.SVC(probability = 1))
+    model  = OneVsRestClassifier(svm.SVC(kernel = 'linear', probability=1))
     # print(eventType[:,1].shape)
     model.fit(reshapedDataType, test)
-    # returns trained model
+    # returns trained modelocData, ev
     return model, reshapedDataType, eventType
 
 
@@ -64,23 +65,28 @@ def SVM(data, events, type = 'target', string='default'):
 if __name__ == '__main__':
     from h5py import File
     from preproc import  stdPreproc
-    with File('../Data/calibration_subject_5.hdf5') as f:
+    with File('../Data/calibration_subject_4.hdf5') as f:
         for i in f:
             print(i)
-        data = f['processedData'].value
+        procData = f['processedData'].value
         rawData = f['rawData'].value
         cap = f['cap'].value
         events = f['events'].value
 
-    # model, reshapedData, tmp = SVM(data, events)
-    modelERN, reshapedData, eventTarget = SVM(data, events, type='feedback')
+    restCondition = np.where(events == 'rest')[1]
+    useIdx  = len(restCondition) / 3
+    np.random.shuffle(restCondition)
+    restCondition = restCondition[useIdx:]
+    useThese = np.zeros((procData.shape[0]))
+    useThese[restCondition] = 1
+    modelIM, reshapedData, _ = SVM(rawData[useThese == 0 , :], events[useThese==0,:], type = 'target',string='im')
+    modelERN, _ , _          = SVM(rawData, events, type = 'feedback',string='ern')
+    print(modelIM)
+    # modelERN, reshapedData, eventTarget = SVM(data, events, type='feedback')
+    # modelIM, rehsapdeData, eventTarget = SVM(rawData, events, type = 'target')
     # tmp = np.array(reshapedData[0,:], ndmin)
-    out = modelERN.predict_proba(reshapedData[[0],:])
+    out = modelIM.predict(reshapedData[:,:])
+    tmp = events[useThese==0,:]
 
-
-    print(out) # eventTarget[:, 1])
-    idx = 20
-    # print(out[:idx], tmp[:idx,1])
-    fig, ax = subplots()
-
-    # print(model.predict_proba(reshapedData))
+    #print(out[:5,:])
+    #print(tmp[tmp[:,0] == 'target',:][:, :5])
