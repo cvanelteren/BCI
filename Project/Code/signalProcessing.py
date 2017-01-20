@@ -85,7 +85,8 @@ while run:
                 ev       = f['events'].value
                 procData = f['processedData'].value
 
-            restCondition = np.where(ev == 'rest')[1]
+            restCondition = np.where(ev == 'rest')[0]
+            print(restCondition)
             useIdx  = len(restCondition) / 3
             np.random.shuffle(restCondition)
             restCondition = restCondition[useIdx:]
@@ -93,8 +94,12 @@ while run:
             useThese[restCondition] = 1
             number = classification.stupidFct()
             print(number)
+
             modelMovement, rD = classification.SVM(\
             procData[useThese == 0, :], ev[useThese==0,:], type = 'target',string='im')[0:2]
+
+            #modelMovement, rD = classification.SVM(\
+            #procData, ev, type = 'target',string='im')[0:2]
             modelERN      = classification.SVM(procData, ev, type = 'feedback',string='ern')[0]
             print(modelMovement)
 
@@ -149,8 +154,8 @@ while run:
                             #tmp  = bufferStorage
                             # bufferStorage = np.array(bufferStorage.flatten(), ndmin = 2 )
                             tmp = tmp.reshape(bufferStorage.shape[0] * bufferStorage.shape[1])[None,:]
-                            print(tmp[0])
-                            print(tmp.shape)
+                            #print(tmp[-1])
+                            #print(tmp.shape)
                             pred = modelMovement.predict_proba(tmp) # prediction
 
                             predsIM.append([pred])
@@ -159,7 +164,7 @@ while run:
                             # bufferStorage = zeros((nPoints, nChans)) # flush
                             i += 1
                         #dd.append(bufferStorage)
-                        print('====')
+                        #print('====')
                         #print(bufferStorage)
                         #if i > 3:
                         #    assert 0
@@ -167,7 +172,7 @@ while run:
                         # print(predsIM)
                         if (len(predsIM) > 10):
                             predsIM = np.array(predsIM).squeeze()
-                            print(predsIM.shape)
+                            #print(predsIM.shape)
                             # print(predsIM[0,0])
                             predsERN = np.array(predsERN).squeeze()
                             weightingIM = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
@@ -175,11 +180,11 @@ while run:
 
                             # predsIM     *= weightingIM
                             # predsERN    *= weightingERN
-                            print(predsIM)
-                            maxPredIM = 0
-                            maxPredERN = 0
-                            #maxPredIM = np.max(predsIM, axis = 0)
-                            #maxPredERN = np.max(predsERN, axis = 0)
+                            #print(predsIM)
+                            #maxPredIM = 0
+                            #maxPredERN = 0
+                            maxPredIM = np.max(predsIM, axis = 0)
+                            maxPredERN = np.max(predsERN, axis = 0)
                             # print('>', maxPredIM)
                             bufhelp.sendEvent('clsfr.prediction.im', maxPredIM)
                             bufhelp.sendEvent('clsfr.prediction.ern', maxPredERN)

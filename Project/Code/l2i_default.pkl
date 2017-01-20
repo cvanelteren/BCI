@@ -1,0 +1,14 @@
+(dp0
+S'feet'
+p1
+I0
+sS'right hand'
+p2
+I3
+sS'rest'
+p3
+I2
+sS'left hand'
+p4
+I1
+s.

@@ -53,7 +53,7 @@ def SVM(data, events, type = 'target', string='default'):
 
     from sklearn import svm
     # model = OneVsRestClassifier(svm.SVC(probability = 1))
-    model  = OneVsRestClassifier(svm.SVC(kernel = 'linear', probability=1))
+    model  = OneVsRestClassifier(svm.SVC(class_weight = 'balanced', kernel = 'sigmoid', probability=1))
     # print(eventType[:,1].shape)
     model.fit(reshapedDataType, test)
     # returns trained modelocData, ev
