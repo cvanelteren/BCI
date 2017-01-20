@@ -247,11 +247,12 @@ def rickerWavelet(binnedData, nWavelet = 20):
 if __name__ == '__main__':
     from scipy import signal
     from h5py import File
-    with File('../Data/calibration_subject_4.hdf5') as f:
+    with File('../Data/calibration_subject_100.hdf5') as f:
         rawData = f['rawData'].value
         procData = f['processedData'].value
         events  = f['events'].value
         cap     = f['cap'].value
+        print(procData.shape)
 
         procData = stdPreproc(rawData,[0, 40], 250, cap)
 

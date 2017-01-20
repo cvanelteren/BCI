@@ -8,7 +8,7 @@ from pylab import *
 
 # PARAMETERS
 # prespecified number of targets
-nTrials = 3 # 60
+nTrials = 60 # 60
 # timestep
 tmp = .1
 # controls how long to show a target (is multiplied with tmp)

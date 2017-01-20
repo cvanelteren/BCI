@@ -3,6 +3,7 @@ from    h5py                import File, special_dtype
 from    pylab               import *
 from    systemHelper        import checkOverwrite
 
+
 import warnings
 # with warnings.catch_warnings():
 # warnings.filterwarnings('ignore')
@@ -10,19 +11,21 @@ import warnings
 import  classification, preproc, bufhelp, os
 import  numpy as np
 import time
+
+from scipy.signal import detrend
 ftc, hdr = bufhelp.connect() # connect to buffer
 
 # get cap file
 filePath    = '../../Buffer/resources/caps/cap_tmsi_mobita_im.txt'
 capFile     = np.loadtxt(filePath, dtype=str)
 nChans      = len(capFile)  # mobita outputs 37, redundant channels remove them
-nChans      = 4
+#nChans      = 4
 
 
 # SET THE SUBJECT NUMBER
 dataDir        = '../Data/'                 # storage of directory
 conditionType  = 'calibration_subject_'     # calibration file
-subjectNumber  =  24                         # subject number
+subjectNumber  =  100                         # subject number
 
 # storage file
 fileCalibration = dataDir + conditionType + str(subjectNumber) + '.hdf5'
@@ -39,6 +42,7 @@ calibrationCatchEvents = [\
                         ]
 
 
+# fileCalibration = checkOverwrite(dataDir, conditionType, subjectNumber)
 
 print("Waiting for start event.")
 run            = True
@@ -49,7 +53,7 @@ while run:
         # print('Found event')calibration
         if e.value == "calibration":
             print("Calibration phase")
-            fileCalibration = checkOverwrite(dataDir, conditionType, subjectNumber)
+
 
             # catch events
             data, events, stopevents = bufhelp.gatherdata(\
@@ -64,7 +68,7 @@ while run:
             dt = special_dtype(vlen=bytes)
             ev = np.array([(event.type, event.value) for event in events])
             # specify [lowerBound, upperBound] bandpass filter range
-            filterBand = [0, 60]
+            filterBand = [0, 40]
             procData = preproc.stdPreproc(data, filterBand, hdr)
             with File(fileCalibration, 'w') as f:
                 # f.create_dataset('targets', data = tmp)
@@ -89,7 +93,7 @@ while run:
         # interface with the game
         elif e.value == "test":
             print("Feedback phase")
-            nChans = hdr.nChannels
+            # nChans = hdr.nChannels
             dt =  1 / hdr.fSample
 
             # PARAMETERS
@@ -97,34 +101,41 @@ while run:
             nPoints  = int((trlen_ms/1e3) / dt)
             print(hdr.fSample)
             # timeSec = linspace(-nPoints, 0, nPoints)
-            print(nPoints)
-            
+            # print(nPoints)
+
             keep = True
             while keep:
                 bufferStorage = zeros((nPoints, nChans))
+                # print(bufferStorage.shape, nChans)
                 # get latest samples and plot them
                 tic = t  =  time.time()
                 predsIM = []
                 predsERN = []
-                i = 1
+                i = 0
                 while abs(tic - time.time()) < plotTime:
                     idx = ftc.getHeader().nSamples  - 1
                     lastSample =  ftc.getData((idx,idx))
-                    bufferStorage            = roll(bufferStorage, 0)
-                    bufferStorage[-1, :]     = lastSample
-
+                    bufferStorage            = roll(bufferStorage, -1, 0)
+                    # print(lastSample.shape)
+                    bufferStorage[-1, :]     = lastSample[0, :nChans]
+                    # print(bufferStorage[-2,:])
+                    pause(.01)
+                    # i+= 1
                     if  t > trlen_ms / 1e3:
-                        bufferStorage = np.array(bufferStorage.flatten(), ndmin = 2 )
-                        pred = modelMovement.predict_proba(bufferStorage) # prediction
+                        bufferStorage = detrend(bufferStorage, 0, type = 'linear')
+                        bufferStorage = detrend(bufferStorage, 0, type = 'constant')
+                        # bufferStorage = np.array(bufferStorage.flatten(), ndmin = 2 )
+                        pred = modelMovement.predict_proba(bufferStorage.reshape(bufferStorage.shape[0] * bufferStorage.shape[1])) # prediction
                         predsIM.append([pred])
-                        pred = modelERN.predict_proba(bufferStorage) # prediction
+                        pred = modelERN.predict_proba(bufferStorage.reshape(bufferStorage.shape[0] * bufferStorage.shape[1])) # prediction
                         predsERN.append([pred])
-                        bufferStorage = zeros((nPoints, nChans)) # flush
+                        # bufferStorage = zeros((nPoints, nChans)) # flush
                         i += 1
                     t = time.time() - tic
 
                 predsIM = np.array(predsIM).squeeze()
-                predsERN = np.array(predsERN).squeeze()              
+                print(predsIM)
+                predsERN = np.array(predsERN).squeeze()
                 weightingIM = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
                 weightingERN = np.arange(start=predsERN.shape[0]+1,stop=1,step=-1)[:,None]
 
@@ -133,11 +144,11 @@ while run:
 
                 maxPredIM = np.max(predsIM, axis = 0)
                 maxPredERN = np.max(predsERN, axis = 0)
-
+                # print('>', maxPredIM)
                 bufhelp.sendEvent('clsfr.prediction.im', maxPredIM)
                 bufhelp.sendEvent('clsfr.prediction.ern', maxPredERN)
                 #bufhelp.sendEvent('clsfr.prediction.im', pred)
-                
+
         elif e.value == "exit":
             run = False
         # print(e.value)
