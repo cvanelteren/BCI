@@ -112,22 +112,36 @@ elif player ==4:
 	CMD_ROLL = 33
 CMD_RST  = 99 # if sth unrecognizable is sent, it will ignore it
 
+# Load dictionaries containing int to label mapping for movement and label to int mapping for ern
+i2l_im = pickle.load(open('Project/Code/i2l_im.pkl','rb'))
+l2i_ern = pickle.load(open('Project/Code/l2i_ern.pkl','rb'))
+
+CMDS = [0, 0, 0, 0]
+verbCMDS = [0, 0, 0, 0]
+
 # Command configuration
-CMDS      = [CMD_ROLL, CMD_JUMP, CMD_SPEED, CMD_RST]
-verbCMDS  = ['Roll','Jump','Speed','Rest']
+for key, value in i2l_im.iteritems():
+	if value == 'left hand':
+		CMDS[key] = CMD_ROLL
+		verbCMDS[key] = 'Roll'
+	elif value == 'feet':
+		CMDS[key] = CMD_JUMP
+		verbCMDS[key] = 'Jump'
+	elif value == 'right hand':
+		CMDS[key] = CMD_SPEED
+		verbCMDS[key] = 'Speed'
+	elif value == 'rest':
+		CMDS[key] = CMD_RST
+		verbCMDS[key] = 'Rest'
 # THRESHOLDS= [.1,        .1,       .1,     .1      ]
 THRESHOLDS= [.025,        .025,       .025,     .025      ]
 
-# Load dictionaries containing int to label mapping for movement and label to int mapping for ern
-i2l = pickle.load(open('Project/Code/i2l_im.pkl','rb'))
-l2i = pickle.load(open('Project/Code/l2i_ern.pkl','rb'))
-
 # Probably introduce instructions here
 while (choice < 5):
-	text_str = 'Instructions: \n\n ' + verbCMDS[0] + ' command will executed when thinking about your ' + i2l[0] + \
-	'\n ' + verbCMDS[1] + ' command will executed when thinking about your ' + i2l[1] + \
-	'\n ' + verbCMDS[2] + ' command will executed when thinking about your ' + i2l[2] + \
-	'\n ' + verbCMDS[3] + ' command will executed when thinking about your ' + i2l[3] + \
+	text_str = 'Instructions: \n\n ' + verbCMDS[0] + ' command will executed when thinking about your ' + i2l_im[0] + \
+	'\n ' + verbCMDS[1] + ' command will executed when thinking about your ' + i2l_im[1] + \
+	'\n ' + verbCMDS[2] + ' command will executed when thinking about your ' + i2l_im[2] + \
+	'\n ' + verbCMDS[3] + ' command will executed when thinking about your ' + i2l_im[3] + \
 	'\n\n Press space to start'
 
 	text                = ax.text(0, 0,text_str,\
@@ -209,7 +223,7 @@ def processBufferEvents():
 			if version == 2:
 				pred = evt.value
 				(m12,i12) = max2(pred) # find max value
-				idxERN = l2i['negative']
+				idxERN = l2i_ern['negative']
 				print('Idx nega ', idxERN, ' idx max ', i12[0])
 				if (i12[0] == idxERN) and (m12[0]-m12[1] > 0.025) and (second_pred is not None):
 					send_command(CMDS[second_pred]);
