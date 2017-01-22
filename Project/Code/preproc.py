@@ -173,10 +173,6 @@ def stdPreproc(data, band,  hdr, cap = None):
     data        = signal.detrend(data,          # re-referencing
                                  axis = 2,
                                  type = 'constant')
-    # data        = signal.detrend(data,
-    #                              axis = 1,
-    #                              type = 'constant') # demean
-
 
     data        = car(data)                     # spatial filter
     data        = butterFilter(data,            # temporal filter

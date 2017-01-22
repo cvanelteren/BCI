@@ -20,10 +20,10 @@ Instructions :
 # prespecified number of targets
 nTrials             = 60
 tmp                 = .1              # multiplication factor (time step)
-target_duration     = 20              # target show time
-feedback_duration   = 10              # feedback show time
-rest_duration       = 15              # duration of rest
-proportion_negative = 1/3             # proportion of negative feedback
+targetDuration      = 20              # target show time
+feedbackDuration    = 10              # feedback show time
+restDuration        = 15              # duration of rest
+proportionNegative  = 1/3             # proportion of negative feedback
 breakTrial          = 15              # break after x trials
 
 
@@ -103,7 +103,7 @@ nCond = len(circleLabels)
 
 # STIMULUS VECTOR
 # create feedback vector
-cutoff                      = round(nTrials * proportion_negative)
+cutoff                      = round(nTrials * proportionNegative)
 give_feedback               = np.zeros((nTrials), dtype=int)
 give_feedback[:int(cutoff)] = 1
 np.random.shuffle(give_feedback)
@@ -192,15 +192,16 @@ for idx, target in enumerate(targets):
     fig.canvas.draw()
 
     # run rest
-    pause(rest_duration * tmp)
-    # for i in range(rest_duration):
+    pause(restDuration * tmp)
+    # for i in range(restDuration):
     #     fig.canvas.draw()
     #     pause(tmp)
 
     # send event with target label to buffer
     bufhelp.sendEvent('target', circleLabels[target])
     # update center from middle circle
-    circles[-1].center = center
+    circles[-1].cen    # SHOW FEEDBACK
+ter = center
     circles[-1].update({'color': targetcolor})
 
     fig.canvas.draw()
@@ -210,7 +211,7 @@ for idx, target in enumerate(targets):
     circles[int(target)].update({'color': resetcolor})
 
     # run a target
-    for i in range(target_duration):
+    for i in range(targetDuration):
         # Color target while animation
         circles[int(target)].update({'color': targetcolor})
         rand_move = np.random.randn() * 2 * np.pi
@@ -218,7 +219,7 @@ for idx, target in enumerate(targets):
         circles[-1].center = coord
         fig.canvas.draw()
         pause(tmp)
-        
+
     # SHOW FEEDBACK
     circles[-1].center = center
     circles[int(target)].update({'color': resetcolor})
@@ -235,7 +236,7 @@ for idx, target in enumerate(targets):
         bufhelp.sendEvent('feedback', 'positive')
 
     fig.canvas.draw()
-    pause(tmp * feedback_duration)
+    pause(tmp * feedbackDuration)
 fig.clf()
 bufhelp.sendEvent('calibration', 'end')
 
