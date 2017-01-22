@@ -141,6 +141,7 @@ waitForSpacePress()
 center      = (0, 0)
 # set up the circle objects
 circles     = []
+texts       = []
 for i in range(nCircle):
     # this is the center circle
     coordinate      = np.array([
@@ -151,8 +152,8 @@ for i in range(nCircle):
         c = Circle(center, r / 12., color=resetcolor)     # magic number was subjective
     # the imagined movement nodes
     else:
-        c = Circle(coordinate, r / 3., color=resetcolor)  # magic number was subjective
-        ax.text(coordinate[0],\
+        c       = Circle(coordinate, r / 3., color=resetcolor)  # magic number was subjective
+        text    = ax.text(coordinate[0],\
                 coordinate[1],\
                 circleLabels[i],\
                 color    = textcolor,\
@@ -160,13 +161,18 @@ for i in range(nCircle):
                 verticalalignment   = 'center', \
                 fontsize = 20)
     circles.append(c)
+    texts.append(text)
     ax.add_artist(circles[i])
 
 
 for idx, target in enumerate(targets):
     # every break trials; take a break wait for user input
     if (idx % breakTrial == 0) and idx > 0:
-        ax.cla()
+        for c, text in zip(circles, texts):
+            c.set_visible(False)
+            text.set_visible(False)
+        fig.canvas.draw()
+
         # display break text
         # create a figure which is full screen in first place TODO
         text_str = 'Take a short break\n This was trial ' + \
@@ -177,9 +183,12 @@ for idx, target in enumerate(targets):
         color               = 'white',\
         horizontalalignment = 'center',\
         verticalalignment   = 'center', \
-        fontsize = 20)
+        fontsize            = 20)
 
-        waitForSpacePress() # wait for user input
+        waitForSpacePress()                     # wait for user input
+        for c, text in zip(circles, texts):
+            c.set_visible(True)
+            text.set_visible(True)
 
     bufhelp.sendEvent('target', 'rest')         # buffer event
 
@@ -190,19 +199,13 @@ for idx, target in enumerate(targets):
 
     fig.canvas.draw()
 
-    # run rest
-    pause(restDuration * dt)
-    # for i in range(restDuration):
-    #     fig.canvas.draw()
-    #     pause(dt)
+    pause(restDuration * dt)                # rest trial
 
-    # send event with target label to buffer
-    bufhelp.sendEvent('target', circleLabels[target])
-    # update center from middle circle
-    circles[-1].center = center
+    bufhelp.sendEvent('target',             # send event to buffer
+                    circleLabels[target])
+    circles[-1].center = center             # move the center circle to center
 
     # SHOW FEEDBACK
-
     circles[-1].update({'color': targetcolor})
 
     fig.canvas.draw()
@@ -236,6 +239,7 @@ for idx, target in enumerate(targets):
         # send event with feedback label to buffer
         bufhelp.sendEvent('feedback', 'positive')
 
+    # circles[-1].center = (np.sin(angles[target]), np.cos(angles[target]))
     fig.canvas.draw()
     pause(dt * feedbackDuration)
 fig.clf()
