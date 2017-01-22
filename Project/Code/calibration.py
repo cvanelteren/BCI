@@ -36,6 +36,7 @@ circleLabels = ['feet', 'right hand', 'left hand']
 
 fig, ax     = subplots(1, 1)
 subplots_adjust(left=0, right=1, top=1, bottom=0)
+fig.canvas.toolbar = None
 # from matplotlib import pyplot as plt
 mng         = get_current_fig_manager()
 mng.full_screen_toggle()
@@ -114,7 +115,7 @@ text = ax.text( 0,\
                 'Welcome\n Press space to start',\
                 color = 'white',\
                 horizontalalignment = 'center',\
-                verticalalignment = 'center')
+                verticalalignment = 'center', fontsize = 20)
 
 # colors
 resetcolor      = '#404040'

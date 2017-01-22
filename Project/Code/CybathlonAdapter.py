@@ -53,8 +53,8 @@ rr = 2 * r
 ax.set_xlim([-rr,rr])
 ax.set_ylim([-rr,rr])
 
-mng = get_current_fig_manager()
-mng.full_screen_toggle()
+# mng = get_current_fig_manager()
+# mng.full_screen_toggle()
 
 # set background
 ax.set_facecolor('black')
@@ -94,7 +94,7 @@ choice = 0
 ax.cla()
 
 # Command offsets, do not change.
-if player == 1: 
+if player == 1:
 	CMD_SPEED= 1
 	CMD_JUMP = 2
 	CMD_ROLL = 3
@@ -176,9 +176,9 @@ def send_command(command):
 	print("Send cmd " + str(command) )
 	cmd = (br_player * 10) + command
 	data = struct.pack('B', cmd)
-	
+
 	br_socket.sendto(data, (br_hostname, br_port))
-	
+
 #Connect to BrainRacers
 br_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
 
@@ -239,8 +239,7 @@ def processBufferEvents():
 				running = False
 
 
-# Receive events until we stop.	
+# Receive events until we stop.
 running = True
 while running:
 	processBufferEvents()
-

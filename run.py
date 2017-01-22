@@ -17,8 +17,8 @@ close('all')
 figg, ax = subplots(1,1)
 subplots_adjust(left=0, right=1, top=1, bottom=0)
 # from matplotlib import pyplot as plt
-mng = get_current_fig_manager()
-mng.full_screen_toggle()
+# mng = get_current_fig_manager()
+# mng.full_screen_toggle()
 
 r = 2
 nCircle = 4
@@ -47,7 +47,7 @@ def press(event):
     	phase = 2
     elif event.key == 'escape':
         phase = 3
-        
+
 def waitForKeyPress():
     global phase
     global returncode

@@ -65,14 +65,19 @@ def SVM(data, events, type = 'target', string='default'):
 if __name__ == '__main__':
     from h5py import File
     from preproc import  stdPreproc
+    import scipy
     with File('../Data/calibration_subject_4.hdf5') as f:
         for i in f:
             print(i)
-        procData = f['processedData'].value
+
+        # assert 0
         rawData = f['rawData'].value
+        procData = f['processedData'].value
         cap = f['cap'].value
         events = f['events'].value
 
+    tmp = scipy.preprocessing.normalize(rawData, 1)
+    plotERP()
     restCondition = np.where(events == 'rest')[1]
     useIdx  = len(restCondition) / 3
     np.random.shuffle(restCondition)

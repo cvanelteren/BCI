@@ -97,16 +97,18 @@ def plotERP(binnedData, cap):
                         ncols = int(nCols), sharex = 'all', sharey = 'all')
     fig.add_subplot(111, frameon=False)
 
+    t = np.linspace(0, 600, erps.shape[1]) # manual edit
+    print(t.shape)
     # plot erps per channel
     for idx, ax in enumerate(axs.flatten()):
-        [ax.plot(erp[:,idx]) for erp in erps]
+        [ax.plot(t, erp[:,idx]) for erp in erps]
         ax.set_title(cap[idx, 0])  # first index is the name
 
 
     ax.legend(label, ncol = erp.shape[0],
             loc = 'upper center', bbox_to_anchor = (-.15, -.5)) # centers under all subplots
     ylab = 'mV'
-    xlab = 'Time[step]'
+    xlab = 'Time[ms]'
     xlabel(xlab, fontsize = 20)
     ylabel(ylab, fontsize = 20)
     tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
@@ -171,9 +173,11 @@ def stdPreproc(data, band,  hdr, cap = None):
     data        = signal.detrend(data,          # re-referencing
                                  axis = 2,
                                  type = 'constant')
-    data        = signal.detrend(data,
-                                 axis = 1,
-                                 type = 'constant') # demean
+    # data        = signal.detrend(data,
+    #                              axis = 1,
+    #                              type = 'constant') # demean
+
+
     data        = car(data)                     # spatial filter
     data        = butterFilter(data,            # temporal filter
                                band = band,
@@ -247,15 +251,21 @@ def rickerWavelet(binnedData, nWavelet = 20):
 if __name__ == '__main__':
     from scipy import signal
     from h5py import File
-    with File('../Data/calibration_subject_4.hdf5') as f:
+    import sklearn.preprocessing
+    with File('../Data/calibration_subject_5.hdf5') as f:
         rawData = f['rawData'].value
         procData = f['processedData'].value
         events  = f['events'].value
         cap     = f['cap'].value
-        print(procData.shape)
+
+        tmp = np.zeros(rawData.shape)
+        for chan in range(rawData.shape[-1]):
+            d =  procData[..., chan]
+            tmp[..., chan] = ((d.T- mean(d,1)) / (std(d,1))).T
+        # print(tmp)
 
         # procData = stdPreproc(rawData,[0, 40], 250, cap)
-
+        # procData = stdPreproc(tmp, [0, 50], 100)
         binnedData = eventSeparator(procData, events)
         plotERP(binnedData, cap)
         print(binnedData['feet'].shape)
