@@ -19,7 +19,7 @@ Instructions :
 # PARAMETERS
 # prespecified number of targets
 nTrials             = 60
-tmp                 = .1              # multiplication factor (time step)
+dt                  = .1              # multiplication factor (time step)
 targetDuration      = 20              # target show time
 feedbackDuration    = 10              # feedback show time
 restDuration        = 15              # duration of rest
@@ -37,13 +37,14 @@ close('all')
 circleLabels = ['feet', 'right hand', 'left hand']
 
 # open a figure remove the toolbar
-fig, ax     = subplots(1, 1)
+fig, ax     = subplots(1, 1, facecolor = 'black')
 subplots_adjust(left   = 0,
                 right  = 1,
                 top    = 1,
                 bottom = 0)                          # full screen [mac users]
 mng         = get_current_fig_manager()              # full_screen_toggle
 mng.full_screen_toggle()
+ax.set_aspect('equal')
 # set background
 ax.set_facecolor('black')
 # remove labels from axes
@@ -56,9 +57,7 @@ try:
 except:
     fig.canvas.toolbar = None                            # alt remove toolbar
 
-
-
-r       = 2                         # radius
+r       = 10                    # radius
 nCircle = len(circleLabels) + 1
 
 # add one more for division in equal angles
@@ -146,13 +145,13 @@ for i in range(nCircle):
     # this is the center circle
     coordinate      = np.array([
                         np.sin(angles[i]),
-                        np.cos(angles[i])]) * 1.4 # magic number is length scaling
+                        np.cos(angles[i])]) * 6 # magic number is length scaling
     # The moving center
     if i == nCircle - 1:
-        c = Circle(center, r / 8., color=resetcolor)
+        c = Circle(center, r / 12., color=resetcolor)     # magic number was subjective
     # the imagined movement nodes
     else:
-        c = Circle(coordinate, r / 4., color=resetcolor)
+        c = Circle(coordinate, r / 3., color=resetcolor)  # magic number was subjective
         ax.text(coordinate[0],\
                 coordinate[1],\
                 circleLabels[i],\
@@ -192,21 +191,23 @@ for idx, target in enumerate(targets):
     fig.canvas.draw()
 
     # run rest
-    pause(restDuration * tmp)
+    pause(restDuration * dt)
     # for i in range(restDuration):
     #     fig.canvas.draw()
-    #     pause(tmp)
+    #     pause(dt)
 
     # send event with target label to buffer
     bufhelp.sendEvent('target', circleLabels[target])
     # update center from middle circle
-    circles[-1].cen    # SHOW FEEDBACK
-ter = center
+    circles[-1].center = center
+
+    # SHOW FEEDBACK
+
     circles[-1].update({'color': targetcolor})
 
     fig.canvas.draw()
 
-    pause(tmp)
+    pause(dt)
     circles[-1].update({'color': centercolor})
     circles[int(target)].update({'color': resetcolor})
 
@@ -218,7 +219,7 @@ ter = center
         coord = (.1 * np.sin(rand_move), .1 * np.cos(rand_move))
         circles[-1].center = coord
         fig.canvas.draw()
-        pause(tmp)
+        pause(dt)
 
     # SHOW FEEDBACK
     circles[-1].center = center
@@ -236,7 +237,7 @@ ter = center
         bufhelp.sendEvent('feedback', 'positive')
 
     fig.canvas.draw()
-    pause(tmp * feedbackDuration)
+    pause(dt * feedbackDuration)
 fig.clf()
 bufhelp.sendEvent('calibration', 'end')
 
