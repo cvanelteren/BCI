@@ -202,12 +202,12 @@ def rickerWavelet(binnedData, nWavelet = 20):
         pos = mean(pos, 1)
         neg = mean(neg, 1)
         im  = ax.imshow( (pos - neg), origin = 'lower',
-                  extent = [0, 150, sizeOfWavelets[0], sizeOfWavelets[-1]])
+                  extent = [0, 600, sizeOfWavelets[0], sizeOfWavelets[-1]])
         # print(im)
         colorbar(im, ax = ax)# cax = ax)
         ax.set_title(sensor[0])
     subplots_adjust(hspace = .5)
-
+    fig.suptitle('Pos - neg')
     labels = ['feet', 'left hand', 'right hand', 'rest']
     # make figure for negative positive
     fig, axs = subplots(5,2)
@@ -219,19 +219,21 @@ def rickerWavelet(binnedData, nWavelet = 20):
         rest      = convolutedData['rest'][:, :, i]
 
 
-        feet = mean(feet, 1)
-        leftHand = mean(leftHand, 1)
-        rightHand  = mean(rightHand, 1)
-        rest      = mean(rest, 1)
+        # feet = mean(feet, 1)
+        # leftHand = mean(leftHand, 1)
+        # rightHand  = mean(rightHand, 1)
+        # rest      = mean(rest, 1)
+        print(feet.shape)
         data = [feet, leftHand, rightHand, rest]
         for idx, datai in enumerate(data):
-            ax.plot(datai[:,i])
+            ax.imshow(datai[:,i], origin = 'lower',
+            extent = [0, 600, sizeOfWavelets[0], sizeOfWavelets[-1]])
 
         ax.set_title(sensor[0])
     ax.legend(labels, ncol = len(labels),
             loc = 'upper center', bbox_to_anchor = (-.15, -.5)) # centers under all subplots
     ylab = 'mV'
-    xlab = 'Time[step]'
+    xlab = 'Time[ms]'
     xlabel(xlab, fontsize = 20)
     ylabel(ylab, fontsize = 20)
     tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
@@ -248,22 +250,18 @@ if __name__ == '__main__':
     from scipy import signal
     from h5py import File
     import sklearn.preprocessing
-    with File('../Data/calibration_subject_5.hdf5') as f:
+    with File('../Data/calibration_subject_5.hdf5', 'r') as f:
         rawData = f['rawData'].value
         procData = f['processedData'].value
         events  = f['events'].value
         cap     = f['cap'].value
 
-        tmp = np.zeros(rawData.shape)
-        for chan in range(rawData.shape[-1]):
-            d =  procData[..., chan]
-            tmp[..., chan] = ((d.T- mean(d,1)) / (std(d,1))).T
-        # print(tmp)
-
+        procData = stdPreproc(rawData, [0, 40], 250 )
         # procData = stdPreproc(rawData,[0, 40], 250, cap)
         # procData = stdPreproc(tmp, [0, 50], 100)
         binnedData = eventSeparator(procData, events)
-        plotERP(binnedData, cap)
+        # plotERP(binnedData, cap)
+        rickerWavelet(binnedData)
         print(binnedData['feet'].shape)
         # plotERP(binnedData, cap)
         # rickerWavelet(binnedData)

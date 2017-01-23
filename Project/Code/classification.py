@@ -49,11 +49,12 @@ def SVM(data, events, type = 'target', string='default'):
     tmp = np.array(convertedLabels)
 
     test = MultiLabelBinarizer().fit_transform(tmp)
-    # print(test.shape)
+    print(test.shape)
 
     from sklearn import svm
     # model = OneVsRestClassifier(svm.SVC(probability = 1))
-    model  = OneVsRestClassifier(svm.SVC(max_iter = 1000,class_weight = 'balanced', kernel = 'rbf', probability=1))
+    # cw = {1: 1/4., 2: 1/4.,3:1/8.,4:1/4.}
+    model  = OneVsRestClassifier(svm.SVC(class_weight = 'balanced', kernel = 'sigmoid', probability=1))
     # print(eventType[:,1].shape)
     model.fit(reshapedDataType, test)
     # returns trained modelocData, ev

@@ -87,7 +87,7 @@ while run:
             print('Loading from ' + fileCalibration)
             print("Training classifier")
             with File(fileCalibration, 'r') as f:
-                # for i in f: print(i)          # file content : debug info
+                for i in f: print(i)          # file content : debug info
                 ev       = f['events'].value
                 procData = f['processedData'].value
                 # mapping  = f['mapping'].value
@@ -140,7 +140,7 @@ while run:
                 lastSample1 = ftc.getData((idx, idx))
 
                 # if exit event is given exit
-                event       = ftc.getEvents()[-4:]
+                event       = ftc.getEvents()[-4:] # hacky way
                 for e in event:
                     if e.type == 'test' and e.value == 'end':
                         keep = False
@@ -192,7 +192,7 @@ while run:
                             predsIM = []
                             predsERN = []
             print('Ending test phase\n storing data...')
-            with File(fileCalibration, 'rw') as f:
+            with File(fileCalibration) as f:
                 testData = np.array(testData)
                 f.create_dataset('test', data = testData)
 

@@ -3,12 +3,14 @@ from pylab import *
 import mne
 from h5py import File
 
-with File('../Data/calibration_subject_MOCK_0.hdf5') as f:
+num = 3
+with File('../Data/calibration_subject_MOCK_{0}.hdf5'.format(num)) as f:
     for i in f: print(i)
     # assert 0
     e = f['events'].value
     d = f['processedData'].value
     c = f['cap'].value
+    d = f['test'].value
 
 
 chanInfo = c[:,1:3]
