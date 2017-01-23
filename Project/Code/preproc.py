@@ -44,7 +44,10 @@ def badChannelRemoval(data, x = 3):
     std = np.std(data)
     # filter with x standard deviations
     events, time, badChans = np.where(abs(data) <  x * std) # bug fixed, i did the  reverse selection!
-    # set all channels to useable
+    # set all channels to useablewith File(fileCalibration) as f:
+                # testData = np.array(testData)
+                # f.create_dataset('test', data = testData)
+
     useable = np.ones(data.shape[-1], dtype = bool)
 
     # if there is an outlier dont use that channel
@@ -260,7 +263,7 @@ if __name__ == '__main__':
         # procData = stdPreproc(rawData,[0, 40], 250, cap)
         # procData = stdPreproc(tmp, [0, 50], 100)
         binnedData = eventSeparator(procData, events)
-        # plotERP(binnedData, cap)
+        plotERP(binnedData, cap)
         rickerWavelet(binnedData)
         print(binnedData['feet'].shape)
         # plotERP(binnedData, cap)

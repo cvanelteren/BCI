@@ -24,7 +24,7 @@ targetDuration      = 20              # target show time
 feedbackDuration    = 10              # feedback show time
 restDuration        = 15              # duration of rest
 proportionNegative  = 1/3             # proportion of negative feedback
-breakTrial          = 120              # break after x trials
+breakTrial          = 15              # break after x trials
 
 
 # connect with the buffer
@@ -44,6 +44,7 @@ subplots_adjust(left   = 0,
                 bottom = 0)                          # full screen [mac users]
 mng         = get_current_fig_manager()              # full_screen_toggle
 mng.full_screen_toggle()
+
 ax.set_aspect('equal')
 # set background
 ax.set_facecolor('black')
@@ -163,6 +164,7 @@ for i in range(nCircle):
     circles.append(c)
     texts.append(text)
     ax.add_artist(circles[i])
+
 
 # display break text
 # create a figure which is full screen in first place TODO

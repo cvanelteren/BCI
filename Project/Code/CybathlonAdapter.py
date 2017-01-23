@@ -112,8 +112,8 @@ elif player ==4:
 CMD_RST  = 99 # if sth unrecognizable is sent, it will ignore it
 
 # Load dictionaries containing int to label mapping for movement and label to int mapping for ern
-i2l_im = pickle.load(open('i2l_im.pkl','rb'))
-l2i_ern = pickle.load(open('l2i_ern.pkl','rb'))
+# i2l_im = pickle.load(open('i2l_im.pkl','rb'))
+# l2i_ern = pickle.load(open('l2i_ern.pkl','rb'))
 
 CMDS = [0, 0, 0, 0]
 verbCMDS = [0, 0, 0, 0]
@@ -242,4 +242,5 @@ def processBufferEvents():
 running = True
 while running:
 	processBufferEvents()
-# bufhelp.sendEvent('test', 'end') # reset for next subject
+
+bufhelp.sendEvent('test', 'end') # reset for next subject

@@ -192,9 +192,9 @@ while run:
                             predsIM = []
                             predsERN = []
             print('Ending test phase\n storing data...')
-            with File(fileCalibration) as f:
-                testData = np.array(testData)
-                f.create_dataset('test', data = testData)
+            # with File(fileCalibration) as f:
+            #     testData = np.array(testData)
+            #     f.create_dataset('test', data = testData)
 
                         # if different sample
                     # while 3 seconds loop
