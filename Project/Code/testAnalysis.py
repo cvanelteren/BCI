@@ -3,8 +3,9 @@ from pylab import *
 import mne
 from h5py import File
 
-with File('calibration_subject_4.hdf5') as f:
+with File('../Data/calibration_subject_MOCK_12.hdf5') as f:
     for i in f: print(i)
+    # assert 0
     e = f['events'].value
     d = f['processedData'].value
     c = f['cap'].value

@@ -76,7 +76,7 @@ def press(event):
     # get the global start variablelen(capFile)  #
     global start
     # look for key event
-    print('press', event.key)
+    # print('press', event.key)
     # spacebar is registered as ' ' for some reason
     if event.key == ' ':
         start = 1
@@ -164,6 +164,16 @@ for i in range(nCircle):
     texts.append(text)
     ax.add_artist(circles[i])
 
+# display break text
+# create a figure which is full screen in first place TODO
+
+
+textBreak           = ax.text(0, 0,'',\
+color               = 'white',\
+horizontalalignment = 'center',\
+verticalalignment   = 'center', \
+fontsize            = 20)
+
 
 for idx, target in enumerate(targets):
     # every break trials; take a break wait for user input
@@ -172,20 +182,13 @@ for idx, target in enumerate(targets):
             c.set_visible(False)
             text.set_visible(False)
         fig.canvas.draw()
-
-        # display break text
-        # create a figure which is full screen in first place TODO
         text_str = 'Take a short break\n This was trial ' + \
                     str(idx) + ' of ' + str(len(targets)) + \
                     '\n Press space to start'
-
-        text                = ax.text(0, 0,text_str,\
-        color               = 'white',\
-        horizontalalignment = 'center',\
-        verticalalignment   = 'center', \
-        fontsize            = 20)
-
+        textBreak.set_text(text_str)
+        textBreak.set_visible(True)             # show break text
         waitForSpacePress()                     # wait for user input
+        textBreak.set_visible(False)            # remove break text
         for c, text in zip(circles, texts):
             c.set_visible(True)
             text.set_visible(True)

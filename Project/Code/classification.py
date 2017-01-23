@@ -49,7 +49,7 @@ def SVM(data, events, type = 'target', string='default'):
     tmp = np.array(convertedLabels)
 
     test = MultiLabelBinarizer().fit_transform(tmp)
-    print(test.shape)
+    # print(test.shape)
 
     from sklearn import svm
     # model = OneVsRestClassifier(svm.SVC(probability = 1))

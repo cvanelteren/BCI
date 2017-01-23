@@ -2,16 +2,11 @@ from    __future__          import print_function
 from    h5py                import File, special_dtype
 from    pylab               import *
 from    systemHelper        import checkOverwrite
-from scipy import signal
-
-
+from    scipy               import signal
 
 import warnings
-# with warnings.catch_warnings():
-# warnings.filterwarnings('ignore')
-
-import  classification, preproc, bufhelp, os
-import  numpy as np
+import classification, preproc, bufhelp, os
+import numpy as np
 import time
 
 from scipy.signal import detrend
@@ -21,13 +16,17 @@ ftc, hdr = bufhelp.connect() # connect to buffer
 filePath    = '../../Buffer/resources/caps/cap_tmsi_mobita_im.txt'
 capFile     = np.loadtxt(filePath, dtype=str)
 nChans      = len(capFile)  # mobita outputs 37, redundant channels remove them
-nChans      = 4
+
 
 
 # SET THE SUBJECT NUMBER
-dataDir        = '../Data/'                 # storage of directory
-conditionType  = 'calibration_subject_MOCK_'     # calibration file
-subjectNumber  =  4                         # subject number
+dataDir        = '../Data/'                     # storage of directory
+conditionType  = 'calibration_subject_'         # calibration file
+subjectNumber  = 12                              # subject number
+
+if hdr.fSample == 100:                          # debug case
+    nChans          = 4
+    conditionType   = conditionType + 'MOCK_'
 
 # storage file
 fileCalibration = dataDir + conditionType + str(subjectNumber) + '.hdf5'
@@ -39,13 +38,13 @@ calibrationCatchEvents = [\
                         'target', 'feet',\
                         'target', 'right hand',\
                         'target', 'left hand',\
-                        'feedback','20',\
+                        'feedback','positive',\
                         'feedback','negative'\
                         ]
 
 wn = np.array([0, 40]) / hdr.fSample
 b, a = signal.butter(2, wn, btype = 'bandpass')
-# fileCalibration = checkOverwrite(dataDir, conditionType, subjectNumber)
+
 
 print("Waiting for start event.")
 run            = True
@@ -57,7 +56,7 @@ while run:
         if e.value == "calibration":
             print("Calibration phase")
 
-            fileCalibratoin = checkOverwrite(dataDir, conditionType, subjectNumber)
+            fileCalibration = checkOverwrite(dataDir, conditionType, subjectNumber)
             # catch events
             data, events, stopevents = bufhelp.gatherdata(\
                                         calibrationCatchEvents, \
@@ -65,46 +64,48 @@ while run:
                                         milliseconds=True, verbose = False)
 
             # convert to arrays and save to disk
-            data = np.array(data) # cut off the redundant channels
-            print(data.shape)
-            data = data[:, :, :nChans]
-            dt = special_dtype(vlen=bytes)
-            ev = np.array([(event.type, event.value) for event in events])
+            data         = np.array(data) # cut off the redundant channels
+            data         = data[:, :, :nChans]
+            dt           = special_dtype(vlen=bytes)
+            ev           = np.array([(event.type, event.value) for event in events])
+            # uniqueEvents = np.unique(ev[:,0])
+
             # specify [lowerBound, upperBound] bandpass filter range
+            print('Data shape ', data.shape)
             filterBand = [0, 40]
             procData = preproc.stdPreproc(data, filterBand, hdr)
             with File(fileCalibration, 'w') as f:
-                # f.create_dataset('targets', data = tmp)
-                f.create_dataset('rawData',       data=data)
-                f.create_dataset('events',        data=ev, dtype=dt)
-                f.create_dataset('processedData', data=procData)
-                f.create_dataset('cap',           data=capFile)
+                f.create_dataset('rawData',       data = data)
+                f.create_dataset('events',        data = ev, dtype = dt)
+                f.create_dataset('processedData', data = procData)
+                f.create_dataset('cap',           data = capFile)
+                # f.create_dataset('mapping',       data = mapping)
             print("End calibration phase")
 
         # load data from disk; train classifier
         elif e.value == "train":
+            print('Loading from ' + fileCalibration)
             print("Training classifier")
             with File(fileCalibration, 'r') as f:
+                # for i in f: print(i)          # file content : debug info
                 ev       = f['events'].value
                 procData = f['processedData'].value
+                # mapping  = f['mapping'].value
 
-            restCondition = np.where(ev == 'rest')[0]
-            print(restCondition)
-            useIdx  = len(restCondition) / 3
+            restCondition           = np.where(ev == 'rest')[0]
+            useIdx                  = len(restCondition) / 3
             np.random.shuffle(restCondition)
-            restCondition = restCondition[useIdx:]
-            useThese = np.zeros((procData.shape[0]))
+            restCondition           = restCondition[useIdx:]
+            useThese                = np.zeros((procData.shape[0]))
             useThese[restCondition] = 1
             number = classification.stupidFct()
-            print(number)
-
-            modelMovement, rD = classification.SVM(\
-            procData[useThese == 0, :], ev[useThese==0,:], type = 'target',string='im')[0:2]
+            modelMovement, rD      = classification.SVM(\
+            procData[useThese == 0, :], ev[useThese==0, :], type = 'target',string='im')[0:2]
 
             #modelMovement, rD = classification.SVM(\
             #procData, ev, type = 'target',string='im')[0:2]
-            modelERN      = classification.SVM(procData, ev, type = 'feedback',string='ern')[0]
-            print(modelMovement)
+            modelERN      = classification.SVM(procData, ev,  type = 'feedback',string='ern')[0]
+            # print(modelMovement)
 
             bufhelp.sendEvent("training", "done")
 
@@ -126,6 +127,8 @@ while run:
             j = 0
             k = 0
             bufferStorage = zeros((nPoints, nChans))
+            testData = []
+
             while keep:
                 # print(bufferStorage.shape, nChans)
                 # get latest samples and plot them
@@ -135,6 +138,12 @@ while run:
                 # dd = []
                 idx = ftc.getHeader().nSamples- 1
                 lastSample1 = ftc.getData((idx, idx))
+
+                # if exit event is given exit
+                event       = ftc.getEvents()[-100:]
+                for e in event:
+                    if e.type == 'test' and e.value == 'end':
+                        keep = False
                 while abs(tic - time.time()) < plotTime:
                     j += 1
                     pause(0.01)
@@ -146,16 +155,13 @@ while run:
 
                         bufferStorage            = np.roll(bufferStorage, -1, 0)
                         bufferStorage[-1, :]     = lastSample1[0, :nChans]
-                        #print('-')
-                        #print(bufferStorage)
-                        # print(bufferStorage[-2,:])
-                        pause(0.01)
                         # i+= 1
                         if  t > trlen_ms / 1e3:
                             tmp = detrend(bufferStorage, 0, type = 'linear')
                             tmp = detrend(tmp, 0, type = 'constant')
                             tmp = signal.filtfilt(b,a, tmp, method = 'gust', axis = 0)
-
+                            # store test data
+                            testData.append(tmp)
                             #tmp  = bufferStorage
                             # bufferStorage = np.array(bufferStorage.flatten(), ndmin = 2 )
                             tmp = tmp.reshape(bufferStorage.shape[0] * bufferStorage.shape[1])[None,:]
@@ -166,38 +172,32 @@ while run:
                             predsIM.append([pred])
                             pred = modelERN.predict_proba(tmp) # prediction
                             predsERN.append([pred])
-                            # bufferStorage = zeros((nPoints, nChans)) # flush
                             i += 1
-                        #dd.append(bufferStorage)
-                        #print('====')
-                        #print(bufferStorage)
-                        #if i > 3:
-                        #    assert 0
+
                         t = time.time() - tic
                         # print(predsIM)
                         if (len(predsIM) > 10):
                             predsIM = np.array(predsIM).squeeze()
                             #print(predsIM.shape)
                             # print(predsIM[0,0])
-                            predsERN = np.array(predsERN).squeeze()
-                            weightingIM = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
-                            weightingERN = np.arange(start=predsERN.shape[0]+1,stop=1,step=-1)[:,None]
-
-                            # predsIM     *= weightingIM
-                            # predsERN    *= weightingERN
-                            #print(predsIM)
-                            #maxPredIM = 0
-                            #maxPredERN = 0
-                            maxPredIM = np.max(predsIM, axis = 0)
-                            maxPredERN = np.max(predsERN, axis = 0)
+                            predsERN        = np.array(predsERN).squeeze()
+                            weightingIM     = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
+                            weightingERN    = np.arange(start=predsERN.shape[0]+1,stop=1,step=-1)[:,None]
+                            maxPredIM       = np.max(predsIM, axis = 0)
+                            maxPredERN      = np.max(predsERN, axis = 0)
                             # print('>', maxPredIM)
                             bufhelp.sendEvent('clsfr.prediction.im', maxPredIM)
                             bufhelp.sendEvent('clsfr.prediction.ern', maxPredERN)
                             #bufhelp.sendEvent('clsfr.prediction.im', pred)
                             predsIM = []
                             predsERN = []
-                    # if different sample
-                # while 3 seconds loop
+            print('Ending test phase\n storing data...')
+            with File(fileCalibration, 'w') as f:
+                testData = np.array(testData)
+                f.create_dataset('test', data = testData)
+
+                        # if different sample
+                    # while 3 seconds loop
         elif e.value == "exit":
             run = False
         # print(e.value)

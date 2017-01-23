@@ -1,7 +1,6 @@
-bufferpath = "../../python/signalProc"
-
+from __future__ import print_function
 import os, sys, random, math, time, socket, struct
-sys.path.append(os.path.dirname(__file__)+bufferpath)
+# sys.path.append(os.path.dirname(__file__)+bufferpath)
 import bufhelp
 import matplotlib
 matplotlib.use('TkAgg')
@@ -77,7 +76,7 @@ while ((choice < 1) or (choice > 4)):
 player = choice
 choice = 0
 ax.cla()
-
+startPhase
 while ((choice < 1) or (choice > 2)):
 	text_str = 'Which version do you want to play?\n Press 1 for Imagined Movement \n Press 2 for Imagined Movement Plus'
 
@@ -113,8 +112,8 @@ elif player ==4:
 CMD_RST  = 99 # if sth unrecognizable is sent, it will ignore it
 
 # Load dictionaries containing int to label mapping for movement and label to int mapping for ern
-i2l_im = pickle.load(open('Project/Code/i2l_im.pkl','rb'))
-l2i_ern = pickle.load(open('Project/Code/l2i_ern.pkl','rb'))
+i2l_im = pickle.load(open('i2l_im.pkl','rb'))
+l2i_ern = pickle.load(open('l2i_ern.pkl','rb'))
 
 CMDS = [0, 0, 0, 0]
 verbCMDS = [0, 0, 0, 0]
@@ -234,8 +233,8 @@ def processBufferEvents():
 			elif evt.value == 'e' :  send_command(CMD_ROLL)
 			elif evt.value == 'esc': running=false
 
-		elif evt.type == 'startPhase.cmd':
-			if evt.value == 'quit':
+		elif evt.type == 'test':
+			if evt.value == 'end':
 				running = False
 
 
@@ -243,3 +242,4 @@ def processBufferEvents():
 running = True
 while running:
 	processBufferEvents()
+# bufhelp.sendEvent('test', 'end') # reset for next subject

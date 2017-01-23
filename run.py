@@ -87,5 +87,6 @@ verticalalignment = 'center')
 global running
 global returncode
 running = True
+call(['python', 'Project/Code/signalProcessing.py'])
 while running:
     waitForKeyPress()
