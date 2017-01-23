@@ -1,7 +1,6 @@
-bufferpath = "../../python/signalProc"
-
+from __future__ import print_function
 import os, sys, random, math, time, socket, struct
-sys.path.append(os.path.dirname(__file__)+bufferpath)
+# sys.path.append(os.path.dirname(__file__)+bufferpath)
 import bufhelp
 import matplotlib
 matplotlib.use('TkAgg')
@@ -53,8 +52,8 @@ rr = 2 * r
 ax.set_xlim([-rr,rr])
 ax.set_ylim([-rr,rr])
 
-mng = get_current_fig_manager()
-mng.full_screen_toggle()
+# mng = get_current_fig_manager()
+# mng.full_screen_toggle()
 
 # set background
 ax.set_facecolor('black')
@@ -94,7 +93,7 @@ choice = 0
 ax.cla()
 
 # Command offsets, do not change.
-if player == 1: 
+if player == 1:
 	CMD_SPEED= 1
 	CMD_JUMP = 2
 	CMD_ROLL = 3
@@ -113,8 +112,8 @@ elif player ==4:
 CMD_RST  = 99 # if sth unrecognizable is sent, it will ignore it
 
 # Load dictionaries containing int to label mapping for movement and label to int mapping for ern
-i2l_im = pickle.load(open('Project/Code/i2l_im.pkl','rb'))
-l2i_ern = pickle.load(open('Project/Code/l2i_ern.pkl','rb'))
+i2l_im = pickle.load(open('i2l_im.pkl','rb'))
+l2i_ern = pickle.load(open('l2i_ern.pkl','rb'))
 
 CMDS = [0, 0, 0, 0]
 verbCMDS = [0, 0, 0, 0]
@@ -176,9 +175,9 @@ def send_command(command):
 	print("Send cmd " + str(command) )
 	cmd = (br_player * 10) + command
 	data = struct.pack('B', cmd)
-	
+
 	br_socket.sendto(data, (br_hostname, br_port))
-	
+
 #Connect to BrainRacers
 br_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
 
@@ -234,13 +233,13 @@ def processBufferEvents():
 			elif evt.value == 'e' :  send_command(CMD_ROLL)
 			elif evt.value == 'esc': running=false
 
-		elif evt.type == 'startPhase.cmd':
-			if evt.value == 'quit':
+		elif evt.type == 'test':
+			if evt.value == 'end':
 				running = False
 
 
-# Receive events until we stop.	
+# Receive events until we stop.
 running = True
 while running:
 	processBufferEvents()
-
+# bufhelp.sendEvent('test', 'end') # reset for next subject

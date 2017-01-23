@@ -9,7 +9,7 @@ nChans = hdr.nChannels
 dt =  1 / hdr.fSample
 
 # PARAMETERS
-plotTime = 2
+plotTime = .1
 nPoints  = int(plotTime / dt)
 time = linspace(-nPoints, 0, nPoints)
 bufferStorage = zeros((nChans, nPoints))

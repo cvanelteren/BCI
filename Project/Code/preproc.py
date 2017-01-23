@@ -97,16 +97,18 @@ def plotERP(binnedData, cap):
                         ncols = int(nCols), sharex = 'all', sharey = 'all')
     fig.add_subplot(111, frameon=False)
 
+    t = np.linspace(0, 600, erps.shape[1]) # manual edit
+    print(t.shape)
     # plot erps per channel
     for idx, ax in enumerate(axs.flatten()):
-        [ax.plot(erp[:,idx]) for erp in erps]
+        [ax.plot(t, erp[:,idx]) for erp in erps]
         ax.set_title(cap[idx, 0])  # first index is the name
 
 
     ax.legend(label, ncol = erp.shape[0],
             loc = 'upper center', bbox_to_anchor = (-.15, -.5)) # centers under all subplots
     ylab = 'mV'
-    xlab = 'Time[step]'
+    xlab = 'Time[ms]'
     xlabel(xlab, fontsize = 20)
     ylabel(ylab, fontsize = 20)
     tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
@@ -171,9 +173,7 @@ def stdPreproc(data, band,  hdr, cap = None):
     data        = signal.detrend(data,          # re-referencing
                                  axis = 2,
                                  type = 'constant')
-    data        = signal.detrend(data,
-                                 axis = 1,
-                                 type = 'constant') # demean
+
     data        = car(data)                     # spatial filter
     data        = butterFilter(data,            # temporal filter
                                band = band,
@@ -202,12 +202,12 @@ def rickerWavelet(binnedData, nWavelet = 20):
         pos = mean(pos, 1)
         neg = mean(neg, 1)
         im  = ax.imshow( (pos - neg), origin = 'lower',
-                  extent = [0, 150, sizeOfWavelets[0], sizeOfWavelets[-1]])
+                  extent = [0, 600, sizeOfWavelets[0], sizeOfWavelets[-1]])
         # print(im)
         colorbar(im, ax = ax)# cax = ax)
         ax.set_title(sensor[0])
     subplots_adjust(hspace = .5)
-
+    fig.suptitle('Pos - neg')
     labels = ['feet', 'left hand', 'right hand', 'rest']
     # make figure for negative positive
     fig, axs = subplots(5,2)
@@ -219,19 +219,21 @@ def rickerWavelet(binnedData, nWavelet = 20):
         rest      = convolutedData['rest'][:, :, i]
 
 
-        feet = mean(feet, 1)
-        leftHand = mean(leftHand, 1)
-        rightHand  = mean(rightHand, 1)
-        rest      = mean(rest, 1)
+        # feet = mean(feet, 1)
+        # leftHand = mean(leftHand, 1)
+        # rightHand  = mean(rightHand, 1)
+        # rest      = mean(rest, 1)
+        print(feet.shape)
         data = [feet, leftHand, rightHand, rest]
         for idx, datai in enumerate(data):
-            ax.plot(datai[:,i])
+            ax.imshow(datai[:,i], origin = 'lower',
+            extent = [0, 600, sizeOfWavelets[0], sizeOfWavelets[-1]])
 
         ax.set_title(sensor[0])
     ax.legend(labels, ncol = len(labels),
             loc = 'upper center', bbox_to_anchor = (-.15, -.5)) # centers under all subplots
     ylab = 'mV'
-    xlab = 'Time[step]'
+    xlab = 'Time[ms]'
     xlabel(xlab, fontsize = 20)
     ylabel(ylab, fontsize = 20)
     tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
@@ -247,16 +249,19 @@ def rickerWavelet(binnedData, nWavelet = 20):
 if __name__ == '__main__':
     from scipy import signal
     from h5py import File
-    with File('../Data/calibration_subject_4.hdf5') as f:
+    import sklearn.preprocessing
+    with File('../Data/calibration_subject_5.hdf5', 'r') as f:
         rawData = f['rawData'].value
         procData = f['processedData'].value
         events  = f['events'].value
         cap     = f['cap'].value
 
-        procData = stdPreproc(rawData,[0, 40], 250, cap)
-
+        procData = stdPreproc(rawData, [0, 40], 250 )
+        # procData = stdPreproc(rawData,[0, 40], 250, cap)
+        # procData = stdPreproc(tmp, [0, 50], 100)
         binnedData = eventSeparator(procData, events)
-        plotERP(binnedData, cap)
+        # plotERP(binnedData, cap)
+        rickerWavelet(binnedData)
         print(binnedData['feet'].shape)
         # plotERP(binnedData, cap)
         # rickerWavelet(binnedData)

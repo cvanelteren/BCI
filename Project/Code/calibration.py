@@ -1,47 +1,63 @@
 from __future__ import division
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')     # In case python doesn't default to this
 from pylab import *
 
-#import sys
-#sys.path.append('../../../python/signalProc/')
+'''
+Instructions :
+    This script will display 4 circles:
+        Three indicating the imagined movement (feet, left and right hand)
+        The center circle will move during a trial run
+        After a trial is completed the center circle will indicate whether the
+        imagined movement was correct, note that this is not related to a classifier
+        and is purely false feedback.
+        Parameters with respect to timing can be set below
+
+    At the end this script will send a train classifier event
+'''
 
 # PARAMETERS
 # prespecified number of targets
-nTrials = 3 # 60
-# timestep
-tmp = .1
-# controls how long to show a target (is multiplied with tmp)
-target_duration = 20
-# controls how long to show the feedback (is multiplied with tmp)
-feedback_duration = 10
-# controls how long to do nothing
-rest_duration = 15
-# proportion of negative feedback given
-proportion_negative = 1/3
-'''
-Note to reader; there are some random numbers in this script; these are
-mainly related to visual and thus can be tweaked to whatever we like
-'''
+nTrials             = 60
+dt                  = .1              # multiplication factor (time step)
+targetDuration      = 20              # target show time
+feedbackDuration    = 10              # feedback show time
+restDuration        = 15              # duration of rest
+proportionNegative  = 1/3             # proportion of negative feedback
+breakTrial          = 120              # break after x trials
+
 
 # connect with the buffer
 import bufhelp
 fct, hdr = bufhelp.connect()
-
 bufhelp.sendEvent('start', 'calibration')
 
 close('all')
 
 circleLabels = ['feet', 'right hand', 'left hand']
 
-fig, ax     = subplots(1, 1)
-subplots_adjust(left=0, right=1, top=1, bottom=0)
-# from matplotlib import pyplot as plt
-mng         = get_current_fig_manager()
+# open a figure remove the toolbar
+fig, ax     = subplots(1, 1, facecolor = 'black')
+subplots_adjust(left   = 0,
+                right  = 1,
+                top    = 1,
+                bottom = 0)                          # full screen [mac users]
+mng         = get_current_fig_manager()              # full_screen_toggle
 mng.full_screen_toggle()
-rcParams['toolbar'] = 'None'
+ax.set_aspect('equal')
+# set background
+ax.set_facecolor('black')
+# remove labels from axes
+ax.set_xticks([])
+ax.set_yticks([])
 
-r = 2
+# this errors in ipython for some reason, not from terminal
+try:
+    fig.canvas.toolbar.pack_forget()                     # remove toolbar
+except:
+    fig.canvas.toolbar = None                            # alt remove toolbar
+
+r       = 10                    # radius
 nCircle = len(circleLabels) + 1
 
 # add one more for division in equal angles
@@ -60,7 +76,7 @@ def press(event):
     # get the global start variablelen(capFile)  #
     global start
     # look for key event
-    print('press', event.key)
+    # print('press', event.key)
     # spacebar is registered as ' ' for some reason
     if event.key == ' ':
         start = 1
@@ -80,24 +96,20 @@ def waitForSpacePress():
         pause(.1)
 
 
-# set background
-ax.set_facecolor('black')
-# remove labels from axes
-ax.set_xticks([])
-ax.set_yticks([])
 
 # remove middle circle
 nCond = len(circleLabels)
 
+# STIMULUS VECTOR
 # create feedback vector
-cutoff                      = round(nTrials * proportion_negative)
+cutoff                      = round(nTrials * proportionNegative)
 give_feedback               = np.zeros((nTrials), dtype=int)
 give_feedback[:int(cutoff)] = 1
 np.random.shuffle(give_feedback)
 
 # create target vectors
 conditionLength = nTrials // nCond
-targets = np.ones((nTrials, ), dtype=int)
+targets         = np.ones((nTrials, ), dtype = int)
 # the idea here is to create 4 labels of equal size,
 # later on arbitrarily i took 0 to be the false trials
 # the rest will be correct  trials
@@ -114,7 +126,7 @@ text = ax.text( 0,\
                 'Welcome\n Press space to start',\
                 color = 'white',\
                 horizontalalignment = 'center',\
-                verticalalignment = 'center')
+                verticalalignment = 'center', fontsize = 20)
 
 # colors
 resetcolor      = '#404040'
@@ -125,61 +137,64 @@ restingcolor    = 'white'
 
 waitForSpacePress()
 
-# set up the circle objects
+# SETUP OF CIRCLES : (action wheel)
 center      = (0, 0)
+# set up the circle objects
 circles     = []
+texts       = []
 for i in range(nCircle):
-    coordinate      = (np.sin(angles[i]), np.cos(angles[i]))
-    # the last one is the one that moves
+    # this is the center circle
+    coordinate      = np.array([
+                        np.sin(angles[i]),
+                        np.cos(angles[i])]) * 6 # magic number is length scaling
+    # The moving center
     if i == nCircle - 1:
-        c = Circle(center, r / 8., color=resetcolor)
+        c = Circle(center, r / 12., color=resetcolor)     # magic number was subjective
+    # the imagined movement nodes
     else:
-        c = Circle(coordinate, r / 4., color=resetcolor)
-        ax.text(coordinate[0],\
+        c       = Circle(coordinate, r / 3., color=resetcolor)  # magic number was subjective
+        text    = ax.text(coordinate[0],\
                 coordinate[1],\
                 circleLabels[i],\
-                color = textcolor,\
+                color    = textcolor,\
                 horizontalalignment = 'center',\
-                verticalalignment='center')
+                verticalalignment   = 'center', \
+                fontsize = 20)
     circles.append(c)
+    texts.append(text)
     ax.add_artist(circles[i])
 
+# display break text
+# create a figure which is full screen in first place TODO
+
+
+textBreak           = ax.text(0, 0,'',\
+color               = 'white',\
+horizontalalignment = 'center',\
+verticalalignment   = 'center', \
+fontsize            = 20)
+
+
 for idx, target in enumerate(targets):
-    if (idx % 15 == 0) and idx > 0:
-        ax.cla()
-        # display break text
-        # create a figure which is full screen in first place TODO
+    # every break trials; take a break wait for user input
+    if (idx % breakTrial == 0) and idx > 0:
+        for c, text in zip(circles, texts):
+            c.set_visible(False)
+            text.set_visible(False)
+        fig.canvas.draw()
         text_str = 'Take a short break\n This was trial ' + \
                     str(idx) + ' of ' + str(len(targets)) + \
                     '\n Press space to start'
+        textBreak.set_text(text_str)
+        textBreak.set_visible(True)             # show break text
+        waitForSpacePress()                     # wait for user input
+        textBreak.set_visible(False)            # remove break text
+        for c, text in zip(circles, texts):
+            c.set_visible(True)
+            text.set_visible(True)
 
-        text                = ax.text(0, 0,text_str,\
-        color               = 'white',\
-        horizontalalignment = 'center',\
-        verticalalignment   = 'center')
-        waitForSpacePress()
+    bufhelp.sendEvent('target', 'rest')         # buffer event
 
-        # set up the circle objects
-        center = (0, 0)
-        circles = []
-        for i in range(nCircle):
-            coordinate = (np.sin(angles[i]), np.cos(angles[i]))
-            # the last one is the one that moves
-            if i == nCircle - 1:
-                c = Circle(center, r / 8., color=resetcolor)
-            else:
-                c = Circle(coordinate, r / 4., color=resetcolor)
-                ax.text(coordinate[0],\
-                        coordinate[1],\
-                        circleLabels[i],\
-                        color = textcolor,\
-                        horizontalalignment = 'center',\
-                        verticalalignment   = 'center')
-            circles.append(c)
-            ax.add_artist(circles[i])
-
-    # send event with target label to buffer'
-    bufhelp.sendEvent('target', 'rest')
     # update color of circles
     circles[-1].center = center
     circles[-1].update({'color': restingcolor})
@@ -187,50 +202,49 @@ for idx, target in enumerate(targets):
 
     fig.canvas.draw()
 
-    # run rest
-    for i in range(rest_duration):
-        fig.canvas.draw()
-        pause(tmp)
+    pause(restDuration * dt)                # rest trial
 
-    # send event with target label to buffer
-    bufhelp.sendEvent('target', circleLabels[target])
-    # update center from middle circle
-    circles[-1].center = center
+    bufhelp.sendEvent('target',             # send event to buffer
+                    circleLabels[target])
+    circles[-1].center = center             # move the center circle to center
+
+    # SHOW FEEDBACK
     circles[-1].update({'color': targetcolor})
 
     fig.canvas.draw()
 
-    pause(tmp)
+    pause(dt)
     circles[-1].update({'color': centercolor})
     circles[int(target)].update({'color': resetcolor})
 
     # run a target
-    for i in range(target_duration):
+    for i in range(targetDuration):
         # Color target while animation
         circles[int(target)].update({'color': targetcolor})
         rand_move = np.random.randn() * 2 * np.pi
         coord = (.1 * np.sin(rand_move), .1 * np.cos(rand_move))
         circles[-1].center = coord
         fig.canvas.draw()
-        pause(tmp)
+        pause(dt)
 
+    # SHOW FEEDBACK
     circles[-1].center = center
     circles[int(target)].update({'color': resetcolor})
 
-    # show feedback
-    # different feedback distribution needed? TODO
-
+    # Positive trials
     if give_feedback[idx] == 1:
         circles[-1].update({'color': 'red'})
         # send event with feedback label to buffer
         bufhelp.sendEvent('feedback', 'negative')
+    # Negative trials
     else:
         circles[-1].update({'color': 'green'})
         # send event with feedback label to buffer
         bufhelp.sendEvent('feedback', 'positive')
 
+    # circles[-1].center = (np.sin(angles[target]), np.cos(angles[target]))
     fig.canvas.draw()
-    pause(tmp * feedback_duration)
+    pause(dt * feedbackDuration)
 fig.clf()
 bufhelp.sendEvent('calibration', 'end')
 

@@ -1,0 +1,8 @@
+(dp0
+I0
+S'negative'
+p1
+sI1
+S'positive'
+p2
+s.
