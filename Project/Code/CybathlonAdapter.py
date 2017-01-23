@@ -76,7 +76,7 @@ while ((choice < 1) or (choice > 4)):
 player = choice
 choice = 0
 ax.cla()
-startPhase
+
 while ((choice < 1) or (choice > 2)):
 	text_str = 'Which version do you want to play?\n Press 1 for Imagined Movement \n Press 2 for Imagined Movement Plus'
 

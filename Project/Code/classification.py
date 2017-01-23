@@ -53,11 +53,11 @@ def SVM(data, events, type = 'target', string='default'):
 
     from sklearn import svm
     # model = OneVsRestClassifier(svm.SVC(probability = 1))
-    model  = OneVsRestClassifier(svm.SVC(class_weight = 'balanced', kernel = 'sigmoid', probability=1))
+    model  = OneVsRestClassifier(svm.SVC(max_iter = 1000,class_weight = 'balanced', kernel = 'rbf', probability=1))
     # print(eventType[:,1].shape)
     model.fit(reshapedDataType, test)
     # returns trained modelocData, ev
-    return model, reshapedDataType, eventType
+    return model, reshapedDataType, test
 
 
 
@@ -65,8 +65,8 @@ def SVM(data, events, type = 'target', string='default'):
 if __name__ == '__main__':
     from h5py import File
     from preproc import  stdPreproc
-    import scipy
-    with File('../Data/calibration_subject_4.hdf5') as f:
+    import sklearn, sklearn.preprocessing
+    with File('../Data/calibration_subject_5.hdf5') as f:
         for i in f:
             print(i)
 
@@ -76,16 +76,16 @@ if __name__ == '__main__':
         cap = f['cap'].value
         events = f['events'].value
 
-    tmp = scipy.preprocessing.normalize(rawData, 1)
-    plotERP()
+    # tmp = sklearn.preprocessing.normalize(rawData, axis = 1)
+    # plotERP()
     restCondition = np.where(events == 'rest')[1]
     useIdx  = len(restCondition) / 3
     np.random.shuffle(restCondition)
     restCondition = restCondition[useIdx:]
     useThese = np.zeros((procData.shape[0]))
     useThese[restCondition] = 1
-    modelIM, reshapedData, _ = SVM(rawData[useThese == 0 , :], events[useThese==0,:], type = 'target',string='im')
-    modelERN, _ , _          = SVM(rawData, events, type = 'feedback',string='ern')
+    modelIM, reshapedData, target = SVM(procData[useThese == 0 , :], events[useThese==0,:], type = 'target',string='im')
+    modelERN, rd , rt          = SVM(rawData, events, type = 'feedback',string='ern')
     print(modelIM)
     # modelERN, reshapedData, eventTarget = SVM(data, events, type='feedback')
     # modelIM, rehsapdeData, eventTarget = SVM(rawData, events, type = 'target')
@@ -93,5 +93,7 @@ if __name__ == '__main__':
     out = modelIM.predict(reshapedData[:,:])
     tmp = events[useThese==0,:]
 
+    print(modelIM.score(reshapedData, target))
+    print(modelERN.score(rd, rt))
     #print(out[:5,:])
     #print(tmp[tmp[:,0] == 'target',:][:, :5])

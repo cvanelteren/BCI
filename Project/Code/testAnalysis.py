@@ -3,7 +3,7 @@ from pylab import *
 import mne
 from h5py import File
 
-with File('../Data/calibration_subject_MOCK_12.hdf5') as f:
+with File('../Data/calibration_subject_MOCK_0.hdf5') as f:
     for i in f: print(i)
     # assert 0
     e = f['events'].value
@@ -20,9 +20,9 @@ font = {'family' : 'normal',
         'size'   : 22}
 
 matplotlib.rc('font', **font)
-fig, ax = subplots()
-show()
-for i in range(10):
-    tmp, _ = mne.viz.plot_topomap(mD[:,i],chanInfo, show = False, names =  c[:,0], sensors = False, show_names=True)
-    # ax.tmp
-    draw()
+# fig, ax = subplots()
+# show()
+# for i in range(10):
+#     tmp, _ = mne.viz.plot_topomap(mD[:,i],chanInfo, show = False, names =  c[:,0], sensors = False, show_names=True)
+#     # ax.tmp
+#     draw()

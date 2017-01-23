@@ -140,7 +140,7 @@ while run:
                 lastSample1 = ftc.getData((idx, idx))
 
                 # if exit event is given exit
-                event       = ftc.getEvents()[-100:]
+                event       = ftc.getEvents()[-4:]
                 for e in event:
                     if e.type == 'test' and e.value == 'end':
                         keep = False
@@ -192,7 +192,7 @@ while run:
                             predsIM = []
                             predsERN = []
             print('Ending test phase\n storing data...')
-            with File(fileCalibration, 'w') as f:
+            with File(fileCalibration, 'rw') as f:
                 testData = np.array(testData)
                 f.create_dataset('test', data = testData)
 

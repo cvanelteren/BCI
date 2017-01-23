@@ -18,7 +18,7 @@ Instructions :
 
 # PARAMETERS
 # prespecified number of targets
-nTrials             = 60
+nTrials             = 10
 dt                  = .1              # multiplication factor (time step)
 targetDuration      = 20              # target show time
 feedbackDuration    = 10              # feedback show time
