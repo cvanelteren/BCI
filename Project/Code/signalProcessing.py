@@ -22,7 +22,7 @@ nChans      = len(capFile)  # mobita outputs 37, redundant channels remove them
 # SET THE SUBJECT NUMBER
 dataDir        = '../Data/'                     # storage of directory
 conditionType  = 'calibration_subject_'         # calibration file
-subjectNumber  = 12                              # subject number
+subjectNumber  = 7                              # subject number
 
 if hdr.fSample == 100:                          # debug case
     nChans          = 4
@@ -88,25 +88,12 @@ while run:
             print("Training classifier")
             with File(fileCalibration, 'r') as f:
                 for i in f: print(i)          # file content : debug info
-                ev       = f['events'].value
-                procData = f['processedData'].value
+                events       = f['events'].value
+                procData     = f['rawData'].value
+                procData = preproc.stdPreproc(procData, [0,40], hdr)
                 # mapping  = f['mapping'].value
 
-            restCondition           = np.where(ev == 'rest')[0]
-            useIdx                  = len(restCondition) / 3
-            np.random.shuffle(restCondition)
-            restCondition           = restCondition[useIdx:]
-            useThese                = np.zeros((procData.shape[0]))
-            useThese[restCondition] = 1
-            number = classification.stupidFct()
-            modelMovement, rD      = classification.SVM(\
-            procData[useThese == 0, :], ev[useThese==0, :], type = 'target',string='im')[0:2]
-
-            #modelMovement, rD = classification.SVM(\
-            #procData, ev, type = 'target',string='im')[0:2]
-            modelERN      = classification.SVM(procData, ev,  type = 'feedback',string='ern')[0]
-            # print(modelMovement)
-
+            modelIM, modelERN = classification.SVM(procData, events)
             bufhelp.sendEvent("training", "done")
 
         # interface with the game
@@ -167,7 +154,7 @@ while run:
                             tmp = tmp.reshape(bufferStorage.shape[0] * bufferStorage.shape[1])[None,:]
                             #print(tmp[-1])
                             #print(tmp.shape)
-                            pred = modelMovement.predict_proba(tmp) # prediction
+                            pred = modelIM.predict_proba(tmp) # prediction
 
                             predsIM.append([pred])
                             pred = modelERN.predict_proba(tmp) # prediction
@@ -183,11 +170,11 @@ while run:
                             predsERN        = np.array(predsERN).squeeze()
                             weightingIM     = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
                             weightingERN    = np.arange(start=predsERN.shape[0]+1,stop=1,step=-1)[:,None]
-                            maxPredIM       = np.max(predsIM, axis = 0)
-                            maxPredERN      = np.max(predsERN, axis = 0)
+                            maxPredIM       = np.min(predsIM, axis = 0)
+                            maxPredERN      = np.min(predsERN, axis = 0)
                             # print('>', maxPredIM)
-                            bufhelp.sendEvent('clsfr.prediction.im', maxPredIM)
-                            bufhelp.sendEvent('clsfr.prediction.ern', maxPredERN)
+                            bufhelp.sendEvent('clsfr.prediction.im', 1 - maxPredIM)
+                            bufhelp.sendEvent('clsfr.prediction.ern', 1 - maxPredERN)
                             #bufhelp.sendEvent('clsfr.prediction.im', pred)
                             predsIM = []
                             predsERN = []

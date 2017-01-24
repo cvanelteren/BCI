@@ -1,12 +1,13 @@
 from __future__ import division, print_function
 import numpy as np
-import scipy.signal as signal
+import scipy
+import sklearn
 from pylab import *
 from h5py import File
 def detrend(data, dim = 1, type = "linear"):
     '''Removes trends from the data.
 
-    Applies the scipy.signal.detrend function to the data, this numpy function
+    Applies the scipy.scipy.signal.detrend function to the data, this numpy function
     offers to types of detrending:
 
     linear - the result of a linear least-squares fit to data is subtracted
@@ -33,7 +34,7 @@ def detrend(data, dim = 1, type = "linear"):
     '''
 
 
-    X = signal.detrend(data, axis=dim)
+    X = scipy.signal.detrend(data, axis=dim)
 
     return X
 def badChannelRemoval(data, x = 3):
@@ -68,8 +69,8 @@ def butterFilter(data, band, N = 2, hdr = 100, dim = 1, filter_type = 'lowpass')
     if len(band) == 2:
         filter_type = 'bandpass'
 
-    b, a = signal.butter(N = N, Wn = band, btype = filter_type)
-    fdata = signal.filtfilt(b,a, data, method = 'gust', axis = dim)
+    b, a = scipy.signal.butter(N = N, Wn = band, btype = filter_type)
+    fdata = scipy.signal.filtfilt(b,a, data, method = 'gust', axis = dim)
     return fdata
 
 
@@ -173,9 +174,12 @@ def stdPreproc(data, band,  hdr, cap = None):
 
     data        = detrend(data)                 # detrend
     # plotERP(data, events, cap)
-    data        = signal.detrend(data,          # re-referencing
+    data        = scipy.signal.detrend(data,          # re-referencing
                                  axis = 2,
                                  type = 'constant')
+    tmp = data.reshape(data.shape[0], -1)
+    tmp = sklearn.preprocessing.normalize(tmp, axis = 1)
+    data = tmp.reshape(data.shape)
 
     data        = car(data)                     # spatial filter
     data        = butterFilter(data,            # temporal filter
@@ -193,7 +197,7 @@ def rickerWavelet(binnedData, nWavelet = 20):
     sizeOfWavelets = logspace(.1, 1.7, nWavelet) # this goes to about 50 hz, more weighting on the lower end
     convolutedData = {}
     for type, data in binnedData.iteritems():
-        cw = signal.cwt(data.flatten(), signal.ricker, sizeOfWavelets)
+        cw = scipy.signal.cwt(data.flatten(), scipy.signal.ricker, sizeOfWavelets)
         cw = cw.reshape(cw.shape[0], data.shape[0], data.shape[1], data.shape[2])   # algorithm expects 1 d array
         convolutedData[type] = cw                                                  # reshape back
 
@@ -253,7 +257,7 @@ if __name__ == '__main__':
     from scipy import signal
     from h5py import File
     import sklearn.preprocessing
-    with File('../Data/calibration_subject_5.hdf5', 'r') as f:
+    with File('../Data/calibration_subject_12.hdf5', 'r') as f:
         rawData = f['rawData'].value
         procData = f['processedData'].value
         events  = f['events'].value

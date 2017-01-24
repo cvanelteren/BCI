@@ -1,4 +1,7 @@
 *DS_Store*
+
+*pyc
+
 /Data/*
 Data/Backup
 Data/calibration_subject_100.hdf5
@@ -17,3 +20,4 @@ Data/calibration_subject_MOCK_6.hdf5
 Data/calibration_subject_MOCK_7.hdf5
 Data/calibration_subject_MOCK_8.hdf5
 Data/calibration_subject_MOCK_9.hdf5
+
