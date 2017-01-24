@@ -177,8 +177,8 @@ def stdPreproc(data, band,  hdr, cap = None):
     data        = scipy.signal.detrend(data,          # re-referencing
                                  axis = 2,
                                  type = 'constant')
-    tmp = data.reshape(data.shape[0], -1)
-    tmp = sklearn.preprocessing.normalize(tmp, axis = 1)
+    # tmp = data.reshape(data.shape[0], -1)
+    tmp = sklearn.preprocessing.normalize(data.flatten(), axis = 0)
     data = tmp.reshape(data.shape)
 
     data        = car(data)                     # spatial filter
@@ -257,7 +257,7 @@ if __name__ == '__main__':
     from scipy import signal
     from h5py import File
     import sklearn.preprocessing
-    with File('../Data/calibration_subject_12.hdf5', 'r') as f:
+    with File('../Data/calibration_subject_4.hdf5', 'r') as f:
         rawData = f['rawData'].value
         procData = f['processedData'].value
         events  = f['events'].value
@@ -268,7 +268,7 @@ if __name__ == '__main__':
         # procData = stdPreproc(tmp, [0, 50], 100)
         binnedData = eventSeparator(procData, events)
         plotERP(binnedData, cap)
-        rickerWavelet(binnedData)
+        # rickerWavelet(binnedData)
         print(binnedData['feet'].shape)
         # plotERP(binnedData, cap)
         # rickerWavelet(binnedData)

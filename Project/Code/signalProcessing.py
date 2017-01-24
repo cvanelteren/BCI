@@ -3,7 +3,7 @@ from    h5py                import File, special_dtype
 from    pylab               import *
 from    systemHelper        import checkOverwrite
 from    scipy               import signal
-
+import sklearn
 import warnings
 import classification, preproc, bufhelp, os
 import numpy as np
@@ -146,6 +146,8 @@ while run:
                         if  t > trlen_ms / 1e3:
                             tmp = detrend(bufferStorage, 0, type = 'linear')
                             tmp = detrend(tmp, 0, type = 'constant')
+                            tmp = sklearn.preprocessing.normalize(tmp.flatten(), axis = 0)
+                            tmp = tmp.reshape(bufferStorage.shape)
                             tmp = signal.filtfilt(b,a, tmp, method = 'gust', axis = 0)
                             # store test data
                             testData.append(tmp)
