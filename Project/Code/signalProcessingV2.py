@@ -29,7 +29,7 @@ if hdr.fSample == 100:                          # debug case
     conditionType   = conditionType + 'MOCK_'
 
 # storage file
-fileCalibration = dataDir + conditionType + str(subjectNumber) + '.hdf5' 
+fileCalibration = dataDir + conditionType + str(subjectNumber) + '.hdf5'
 # BUFFER PARAMETERS
 trlen_ms       = 600
 
@@ -104,95 +104,59 @@ while run:
 
             # PARAMETERS
             plotTime = 3
-            nPoints  = int((trlen_ms/1e3) / dt)
-            print(hdr.fSample)
+            # nPointsTrial  = int((trlen_ms/1e3) / dt)
+            nSamples      = int(3 / (trlen_ms / 1e3))
+            nPoints       =  int(3 / dt)
+
+            weight = np.exp(- np.linspace(3,0,nSamples))[:, None].T
+
+            print('Sampling rate', hdr.fSample)
             # timeSec = linspace(-nPoints, 0, nPoints)
             # print(nPoints)
 
             keep = True
-            i = 0
-            j = 0
-            k = 0
             bufferStorage = zeros((nPoints, nChans))
             testData = []
 
             while keep:
-                # print(bufferStorage.shape, nChans)
-                # get latest samples and plot them
-                tic = t  =  time.time()
-                predsIM = []
-                predsERN = []
-                # dd = []
-                idx = ftc.getHeader().nSamples- 1
-                lastSample1 = ftc.getData((idx, idx))
-
-                # if exit event is given exit
-                event       = ftc.getEvents()[-4:] # hacky way
-                for e in event:
-                    if e.type == 'test' and e.value == 'end':
+                endSample, startEvent    = ftc.poll()                                 # get current index sample
+                startSample              = endSample - nPoints + 1                    # compute end sample
+                _, stopEvent             = ftc.wait(nPoints, -1, timeout = nPoints)   # 3 sec timout
+                events                   = ftc.getEvents((startEvent, stopEvent - 1)) # get events within frame
+                for ev in events:                                                     # check for stopping
+                    if ev.type == 'test' and ev.value == 'end':
                         keep = False
-                while abs(tic - time.time()) < plotTime:
-                    j += 1
-                    pause(0.01)
-                    idx = ftc.getHeader().nSamples  - 1
-                    lastSample2 =  ftc.getData((idx,idx))
-                    if not all(lastSample1 == lastSample2):
-                        k += 1
-                        lastSample1 = lastSample2
 
-                        bufferStorage            = np.roll(bufferStorage, -1, 0)
-                        bufferStorage[-1, :]     = lastSample1[0, :nChans]
-                        # i+= 1
-                        if  t > trlen_ms / 1e3:
-                            tmp = detrend(bufferStorage, 0, type = 'linear')
-                            # tmp = detrend(tmp, 0, type = 'constant')
-                            tmp = sklearn.preprocessing.normalize(tmp.flatten(), axis = 0)
-                            tmp = tmp.reshape(bufferStorage.shape)
-                            tmp = signal.filtfilt(b,a, tmp, method = 'gust', axis = 0)
-                            # store test data
-                            testData.append(tmp)
-                            #tmp  = bufferStorage
-                            # bufferStorage = np.array(bufferStorage.flatten(), ndmin = 2 )
-                            tmp = tmp.reshape(bufferStorage.shape[0] * bufferStorage.shape[1])[:, None]
-                            print(tmp.T.shape, tmp.reshape(1,-1).shape)
-                            print(bufferStorage.shape)
+                # the try command is here because when debugging the event viewer freezes
+                # yielding NoneType for data, which will crash; this is a workaround
+                try:
+                    bufferStorage    = ftc.getData((startSample, endSample))    # grab from buffer
+                    bufferStorage    =  bufferStorage.reshape(nSamples, -1)     # reshape nSamples x (time x channels)
+                    IM               = modelIM.predict_proba(bufferStorage)     # compute probability for IM
+                    ERN              = modelERN.predict_proba(bufferStorage)    # compute probability for ERN
+                    weightedIM       = weight.dot(IM)                           # weigh IM
+                    weightedERN      = weight.dot(ERN)                          # weigh ERN
+                    maxIMIdx         = np.unravel_index(np.argmax(weightedIM), weightedIM.shape) # compute the max index
+                    maxERNIdx        = np.unravel_index(np.argmax(weightedERN), weightedIM.shape)
 
-                            #print(tmp[-1])
-                            #print(tmp.shape)
-                            print(modelIM.predict(np.random.rand(2,240)))
-                            pred = modelIM.predict_proba(tmp.reshape(1,-1)) # prediction
+                    # send the events!
+                    bufhelp.sendEvent('clsf.prediction.im', 1 - IM[maxIMIdx, :])
+                    bufhelp.sendEvent('clsf.prediction.ern', 1 - ERN[maxERNIdx, :])
+                except:
+                    pass
 
-                            predsIM.append([pred])
-                            pred = modelERN.predict_proba(tmp.reshape(1,-1
-                            )) # prediction
-                            assert 0
-                            predsERN.append([pred])
 
-                            i += 1
 
-                        t = time.time() - tic
-                        # print(predsIM)
-                        if (len(predsIM) > 4):
-                            predsIM = np.array(predsIM).squeeze()
-                            #print(predsIM.shape)
-                            # print(predsIM[0,0])
-                            predsERN        = np.array(predsERN).squeeze()
 
-                            # weightingIM     = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
-                            # weightingERN    = np.arange(start=predsERN.shape[0]+1,stop=1,step=-1)[:,None]
 
-                            weight = np.exp(-np.linspace(3, 0, 5))[:, None].T
-                            maxIM  = np.argmax(predsIM) # max over entire matrix
-                            maxERN = np.argmax(predsERN) # max over entire matrix
-                            maxIM  = np.unravel_index(maxIM, predsIM.shape)[0] # obrain correct rows=
-                            maxERN = np.unravel_index(maxERN, predsERN.shape)[0] # obtain correct row
 
-                            # print('>', maxPredIM)
-                            bufhelp.sendEvent('clsfr.prediction.im', 1 - predsIM[maxIM[0],:])
-                            bufhelp.sendEvent('clsfr.prediction.ern',1 - predsERN[maxERN[0], :])
-                            #bufhelp.sendEvent('clsfr.prediction.im', pred)
-                            predsIM = []
-                            predsERN = []
+
+
+
+
+
+
+
             print('Ending test phase\n storing data...')
             # with File(fileCalibration) as f:
             #     testData = np.array(testData)

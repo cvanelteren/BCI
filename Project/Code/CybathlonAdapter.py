@@ -42,7 +42,10 @@ def waitForKeyPress():
 
 fig, ax = subplots(1,1)
 subplots_adjust(left=0, right=1, top=1, bottom=0)
-
+try:
+    fig.canvas.toolbar.pack_forget()                     # remove toolbar
+except:
+    fig.canvas.toolbar = None                            # alt remove toolbar
 r = 2
 nCircle = 4
 
