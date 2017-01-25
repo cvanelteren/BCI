@@ -20,6 +20,10 @@ subplots_adjust(left=0, right=1, top=1, bottom=0)
 # from matplotlib import pyplot as plt
 # mng = get_current_fig_manager()
 # mng.full_screen_toggle()
+try:
+    fig.canvas.toolbar.pack_forget()                     # remove toolbar
+except:
+    fig.canvas.toolbar = None                            # alt remove toolbar
 
 r = 2
 nCircle = 4

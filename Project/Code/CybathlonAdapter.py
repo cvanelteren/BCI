@@ -42,7 +42,10 @@ def waitForKeyPress():
 
 fig, ax = subplots(1,1)
 subplots_adjust(left=0, right=1, top=1, bottom=0)
-
+try:
+    fig.canvas.toolbar.pack_forget()                     # remove toolbar
+except:
+    fig.canvas.toolbar = None                            # alt remove toolbar
 r = 2
 nCircle = 4
 
@@ -195,15 +198,19 @@ while running:
             bestIdx = np.argmax(pred)
             if pred[bestIdx] > 1 / float(len(pred)):
                 send_command(CMDS[bestIdx])
+                bufhelp.sendEvent('cmd','fdfd01')
             else:
                 send_command(np.random.randint(0, len(pred)))
+                bufhelp.sendEvent('cmd','fdf02')
     	elif evt.type == 'clsfr.prediction.ern' and version == 2:
             pred = evt.value
             bestIdx = np.argsort(pred)[-2]
             if pred[bestIdx] > 1 / (float( len (pred) ) ):
                 send_command(CMDS[bestIdx])
+                bufhelp.sendEvent('cmd','fdfd03f')
             else:
                 send_command(np.random.randint(0, len(pred)))
+                bufhelp.sendEvent('cmd','fdfd04f')
 
     	elif evt.type == 'keyboard':
     		if   evt.value == 'q' :  send_command(CMD_SPEED)
