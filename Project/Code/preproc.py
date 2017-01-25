@@ -172,25 +172,25 @@ def stdPreproc(data, band,  hdr, cap = None):
             Filters the data
     '''
 
-    data        = detrend(data)                 # detrend
+    data        = detrend(data)                       # detrend
     # plotERP(data, events, cap)
-    data        = scipy.signal.detrend(data,          # re-referencing
-                                 axis = 2,
-                                 type = 'constant')
+    # data        = scipy.signal.detrend(data,          # re-referencing
+    #                              axis = 2,
+    #                              type = 'constant')
     # tmp = data.reshape(data.shape[0], -1)
+    data        = car(data)                     # spatial filter
+    useable     = badChannelRemoval(data)       # remove bad channels
+    data        = data[:, :, useable]           # remove the bad channels
     tmp = sklearn.preprocessing.normalize(data.flatten(), axis = 0)
     data = tmp.reshape(data.shape)
 
-    data        = car(data)                     # spatial filter
     data        = butterFilter(data,            # temporal filter
                                band = band,
                                hdr = hdr)
 
-    useable     = badChannelRemoval(data)       # remove bad channels
     if cap != None:
         print('Removing channels :\n', cap[useable == False])
 
-    data        = data[:, :, useable]           # remove the bad channels
     return data
 
 def rickerWavelet(binnedData, nWavelet = 20):

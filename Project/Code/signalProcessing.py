@@ -145,7 +145,7 @@ while run:
                         # i+= 1
                         if  t > trlen_ms / 1e3:
                             tmp = detrend(bufferStorage, 0, type = 'linear')
-                            tmp = detrend(tmp, 0, type = 'constant')
+                            # tmp = detrend(tmp, 0, type = 'constant')
                             tmp = sklearn.preprocessing.normalize(tmp.flatten(), axis = 0)
                             tmp = tmp.reshape(bufferStorage.shape)
                             tmp = signal.filtfilt(b,a, tmp, method = 'gust', axis = 0)
@@ -165,18 +165,23 @@ while run:
 
                         t = time.time() - tic
                         # print(predsIM)
-                        if (len(predsIM) > 10):
+                        if (len(predsIM) > 4):
                             predsIM = np.array(predsIM).squeeze()
                             #print(predsIM.shape)
                             # print(predsIM[0,0])
                             predsERN        = np.array(predsERN).squeeze()
-                            weightingIM     = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
-                            weightingERN    = np.arange(start=predsERN.shape[0]+1,stop=1,step=-1)[:,None]
-                            maxPredIM       = np.min(predsIM, axis = 0)
-                            maxPredERN      = np.min(predsERN, axis = 0)
+
+                            # weightingIM     = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
+                            # weightingERN    = np.arange(start=predsERN.shape[0]+1,stop=1,step=-1)[:,None]
+
+                            weight = np.exp(-np.linspace(3, 0, 5))[:, None].T
+                            maxIM  = np.argmax(weight.dot(1 - predsIM), 0)
+                            maxERN = np.argmax(weight.dot(1 - predsERN), 0 )
+
+
                             # print('>', maxPredIM)
-                            bufhelp.sendEvent('clsfr.prediction.im', 1 - maxPredIM)
-                            bufhelp.sendEvent('clsfr.prediction.ern', 1 - maxPredERN)
+                            bufhelp.sendEvent('clsfr.prediction.im', 1 - predsIM[maxIM,:])
+                            bufhelp.sendEvent('clsfr.prediction.ern',1 - predsERN[maxERN, :])
                             #bufhelp.sendEvent('clsfr.prediction.im', pred)
                             predsIM = []
                             predsERN = []
