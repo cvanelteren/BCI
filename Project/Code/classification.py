@@ -128,4 +128,4 @@ if __name__ == '__main__':
         events = f['events'].value
     # kcrossVal(procData, events)
     import sklearn
-    SVM(procData, events)
+    a,b = SVM(procData, events)
