@@ -29,7 +29,7 @@ if hdr.fSample == 100:                          # debug case
     conditionType   = conditionType + 'MOCK_'
 
 # storage file
-fileCalibration = dataDir + conditionType + str(subjectNumber) + '.hdf5'
+fileCalibration = dataDir + conditionType + str(subjectNumber) + '.hdf5' 
 # BUFFER PARAMETERS
 trlen_ms       = 600
 
@@ -180,8 +180,8 @@ while run:
 
 
                             # print('>', maxPredIM)
-                            bufhelp.sendEvent('clsfr.prediction.im', 1 - predsIM[maxIM,:])
-                            bufhelp.sendEvent('clsfr.prediction.ern',1 - predsERN[maxERN, :])
+                            bufhelp.sendEvent('clsfr.prediction.im', 1 - predsIM[maxIM[0],:])
+                            bufhelp.sendEvent('clsfr.prediction.ern',1 - predsERN[maxERN[0], :])
                             #bufhelp.sendEvent('clsfr.prediction.im', pred)
                             predsIM = []
                             predsERN = []
