@@ -32,11 +32,13 @@ def detrend(data, dim = 1, type = "linear"):
     >>> data = bufhelp.gatherdata("start",10,"stop")
     >>> data = preproc.detrend(data)
     '''
+    # print(data.shape)
+    # assert 0
+    # X = data.reshape(-1, data.shape[-1] )
+    # print(X.shape)
+    # x = scipy.signal.detrend(X, axis = 0)
 
-
-    X = scipy.signal.detrend(data, axis=dim)
-
-    return X
+    return scipy.signal.detrend(data, axis = 1)
 def badChannelRemoval(data, x = 3):
     '''
     assumes data is event, time, channels
@@ -164,7 +166,7 @@ def car(data):
   W = np.eye(n) - 1 / float(n)
   return  data.dot(W)
 
-def stdPreproc(data, band,  hdr, cap = None):
+def stdPreproc(data, band,  hdr, cap = None, test = 1):
     '''
     Function performs:
             Detrends the data
@@ -172,24 +174,26 @@ def stdPreproc(data, band,  hdr, cap = None):
             Filters the data
     '''
 
-    data        = detrend(data)                       # detrend
-    # plotERP(data, events, cap)
-    # data        = scipy.signal.detrend(data,          # re-referencing
-    #                              axis = 2,
-    #                              type = 'constant')
-    # tmp = data.reshape(data.shape[0], -1)
-    data        = car(data)                     # spatial filter
-    useable     = badChannelRemoval(data)       # remove bad channels
-    data        = data[:, :, useable]           # remove the bad channels
-    tmp = sklearn.preprocessing.normalize(data.flatten(), axis = 0)
-    data = tmp.reshape(data.shape)
+    data        = detrend(data)                        # detrend
+    if not test:
+        useable     = badChannelRemoval(data, x = 2)       # remove bad channels
+        data        = data[..., useable]                  # remove the bad channels
+    data        = car(data)                            # spatial filter
+
+    # tmp         = sklearn.preprocessing.normalize(data.flatten(), axis = 0) #feature normalization
+    # data        = tmp.reshape(data.shape)
+
+    tmp        = data.reshape(-1)
+    tmp        = (tmp - np.mean(tmp,0)) / np.std(tmp, 0)
+    data        = tmp.reshape(data.shape)
+
 
     data        = butterFilter(data,            # temporal filter
                                band = band,
                                hdr = hdr)
 
     if cap != None:
-        print('Removing channels :\n', cap[useable == False])
+        print('Removing cdatahannels :\n', cap[useable == False])
 
     return data
 
@@ -293,7 +297,7 @@ def rickerWavelet(binnedData, nWavelet = 20, want = 'Pz', plotPos = 1,
         dataset = np.mean(dataset, 1)
         # print(dataset[..., electrode].shape)d
         im     = axi.imshow(dataset[..., electrode].squeeze(),
-        extent = [0, 600, sizeOfWavelets[0], sizeOfWavelets[-1]], aspect = 'auto',
+        extent = [0, 1000, sizeOfWavelets[0], sizeOfWavelets[-1]], aspect = 'auto',
         origin = 'lower', cmap = 'viridis',
         interpolation = 'bicubic',
         vmin = plotMin, vmax = plotMax)
@@ -330,13 +334,18 @@ if __name__ == '__main__':
         events  = f['events'].value
         cap     = f['cap'].value
 
-        # procData = stdPreproc(rawData, [0, 40], 250 )
-        # procData = stdPreproc(rawData,[0, 40], 250, cap)
-        # procData = stdPreproc(tmp, [0, 50], 100)
-        procData   = stdPreproc(rawData, [0, 40], 250)
-        binnedData = eventSeparator(rawData, events)
+
+        procData   = stdPreproc(rawData, [0, 14], 250)
+        binnedData = eventSeparator(procData, events)
+        rickerWavelet(binnedData)
+        # ft = abs(np.fft.fft(procData, axis = 1))**2
+        #
+        # fig, ax = subplots()
+        # ax.plot(ft[0, :50 , :])
+        # show()
+        # binnedData = eventSeparator(procData, events)
         # plotERP(binnedData, cap)
-        # rickerWavelet(binnedData)
+        # rickerWavelet(binnedDat   a)
         # rickerWavelet(binnedData)
         #
         # pos = binnedData['negative']

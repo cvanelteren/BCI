@@ -67,7 +67,7 @@ ax.set_xticks([])
 ax.set_yticks([])
 
 fig.canvas.mpl_connect('key_press_event', press)
-
+choice = 0
 while ((choice < 1) or (choice > 4)):
 	text = ax.text(0, 0,\
 	'Please choose the player you are using:\n Press 1 for Player 1\n Press 2 for Player 2\n Press 3 for Player 3\n Press 4 for Player 4',\
@@ -79,6 +79,7 @@ while ((choice < 1) or (choice > 4)):
 
 # Save player number
 player = choice
+print('Player',player)
 choice = 0
 ax.cla()
 
@@ -94,38 +95,39 @@ while ((choice < 1) or (choice > 2)):
 
 # Save version number
 version = choice
+print('Version',choice)
 choice = 0
 ax.cla()
 
 # Command offsets, do not change.
 if player == 1:
-	CMD_SPEED= 1
-	CMD_JUMP = 2
-	CMD_ROLL = 3
-elif player ==2:
 	CMD_SPEED= 11
 	CMD_JUMP = 12
 	CMD_ROLL = 13
-elif player ==3:
+elif player ==2:
 	CMD_SPEED= 21
 	CMD_JUMP = 22
 	CMD_ROLL = 23
-elif player ==4:
+elif player ==3:
 	CMD_SPEED= 31
 	CMD_JUMP = 32
 	CMD_ROLL = 33
+elif player ==4:
+	CMD_SPEED= 41
+	CMD_JUMP = 42
+	CMD_ROLL = 43
 CMD_RST  = 99 # if sth unrecognizable is sent, it will ignore it
 
 # Command configuration
-CMDS      = [CMD_ROLL, CMD_JUMP, CMD_SPEED, CMD_RST]
-verbCMDS  = ['Roll','Jump','Speed','Rest']
+CMDS      = [CMD_JUMP, CMD_ROLL, CMD_RST, CMD_SPEED]
+verbCMDS  = ['Jump','Roll','Rest','Speed']
 # THRESHOLDS= [.1,        .1,       .1,     .1      ]
 THRESHOLDS= [.025,        .025,       .025,     .025      ]
 
 # Load dictionaries containing int to label mapping for movement and label to int mapping for ern
 # i2l = pickle.load(open('Project/Code/i2l_im.pkl','rb'))
 # l2i = pickle.load(open('Project/Code/l2i_ern.pkl','rb'))
-labels = sort(['left hand','right hand', 'feet', 'rest'])
+labels = sorted(['left hand','right hand', 'feet', 'rest'])
 # Probably introduce instructions here
 while (choice < 5):
 	text_str =\
@@ -156,7 +158,8 @@ buffer_hostname='localhost'
 buffer_port=1972
 
 # Configuration of BrainRacer
-br_hostname='localhost'
+# br_hostname='131.174.105.190'
+br_hostname = 'localhost'
 br_port=5555
 br_player=player
 
@@ -173,6 +176,19 @@ def send_command(command, v = verbCMDS):
 
 	br_socket.sendto(data, (br_hostname, br_port))
 
+def max2(numbers):
+    i1 = i2 = None
+    m1 = m2 = float('-inf')
+    for i,v in enumerate(numbers):
+        if v > m2:
+            if v >= m1:
+                m1, m2 = v, m1
+                i1, i2 = i, i1
+            else:
+                m2 = v
+                i2 = i
+    return ([m1,m2],[i1,i2])
+
 #Connect to BrainRacers
 br_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
 
@@ -186,32 +202,31 @@ print(version)
 bufhelp.sendEvent('start', 'test')
 # Receive events from the buffer and process them.
 # Receive events until we stop.
+global running
 running = True
 while running:
     global running
     events = bufhelp.buffer_newevents()
-    nChans = 0
+    nChans = 10
     for evt in events:
     	# print( str(evt.sample) + ": " + str(evt) )
     	if evt.type == 'clsfr.prediction.im' :
             pred = evt.value
-            bestIdx = np.argmax(pred)
-            if pred[bestIdx] > 1 / float(len(pred)):
-                send_command(CMDS[bestIdx])
-                bufhelp.sendEvent('cmd','fdfd01')
+            (m12,i12) = max2(pred) # find max value
+            second_pred = i12[1]
+            if m12[0]-m12[1] > THRESHOLDS[i12[0]] :
+                send_command(CMDS[i12[0]]); # if above threshold send
+                bufhelp.sendEvent('cmd','IM:' + str(CMDS[i12[0]]) + verbCMDS[i12[0]])
+                print('cmd IM', verbCMDS[i12[0]])
             else:
-                send_command(np.random.randint(0, len(pred)))
-                bufhelp.sendEvent('cmd','fdf02')
+                bufhelp.sendEvent('cmd','No valid classification')
+                #print('cmd invalid')
     	elif evt.type == 'clsfr.prediction.ern' and version == 2:
             pred = evt.value
-            bestIdx = np.argsort(pred)[-2]
-            if pred[bestIdx] > 1 / (float( len (pred) ) ):
-                send_command(CMDS[bestIdx])
-                bufhelp.sendEvent('cmd','fdfd03f')
-            else:
-                send_command(np.random.randint(0, len(pred)))
-                bufhelp.sendEvent('cmd','fdfd04f')
-
+            if pred[1]-pred[0] > 0.1 and (second_pred is not None):
+                send_command(CMDS[second_pred]);
+                bufhelp.sendEvent('cmd','ERN:' +  str(CMDS[i12[0]]) + verbCMDS[i12[0]])
+                print('cmd ERN redo',verbCMDS[i12[0]])
     	elif evt.type == 'keyboard':
     		if   evt.value == 'q' :  send_command(CMD_SPEED)
     		elif evt.value == 'w' :  send_command(CMD_JUMP)

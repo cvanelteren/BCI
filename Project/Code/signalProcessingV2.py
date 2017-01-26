@@ -22,16 +22,16 @@ nChans      = len(capFile)  # mobita outputs 37, redundant channels remove them
 # SET THE SUBJECT NUMBER
 dataDir        = '../Data/'                     # storage of directory
 conditionType  = 'calibration_subject_'         # calibration file
-subjectNumber  = 7                              # subject number
+subjectNumber  = 1                           # subject number
 
 if hdr.fSample == 100:                          # debug case
     nChans          = 4
     conditionType   = conditionType + 'MOCK_'
-
+    # hdf = 250
 # storage file
 fileCalibration = dataDir + conditionType + str(subjectNumber) + '.hdf5'
 # BUFFER PARAMETERS
-trlen_ms       = 600
+trlen_ms       = 1000
 
 # event.type, event.value to watch for
 calibrationCatchEvents = [\
@@ -52,17 +52,18 @@ while run:
     e = bufhelp.waitforevent('start', 1000, 0)
 
     if e is not None:
-        # print('Found event')calibration
+        # print('dataFound event')calibration
         if e.value == "calibration":
             print("Calibration phase")
 
-            fileCalibration = checkOverwrite(dataDir, conditionType, subjectNumber)
+            #fileCalibration = checkOverwrite(dataDir, conditionType, subjectNumber)
             # catch events
             data, events, stopevents = bufhelp.gatherdata(\
                                         calibrationCatchEvents, \
                                         trlen_ms, ("calibration", "end"), \
                                         milliseconds=True, verbose = False)
 
+            print('yo')
             # convert to arrays and save to disk
             data         = np.array(data) # cut off the redundant channels
             data         = data[:, :, :nChans]
@@ -108,6 +109,7 @@ while run:
             nSamples      = int(3 / (trlen_ms / 1e3))
             nPoints       =  int(3 / dt)
 
+
             weight = np.exp(- np.linspace(3,0,nSamples))[:, None].T
 
             print('Sampling rate', hdr.fSample)
@@ -121,7 +123,8 @@ while run:
             while keep:
                 endSample, startEvent    = ftc.poll()                                 # get current index sample
                 startSample              = endSample - nPoints + 1                    # compute end sample
-                _, stopEvent             = ftc.wait(nPoints, -1, timeout = nPoints)   # 3 sec timout
+                # _, stopEvent             = ftc.wait(nPoints, -1, timeout = nPoints)   # 3 sec timout
+                _, stopEvent             = ftc.wait(endSample + nPoints, -1, timeout = 3000)
                 events                   = ftc.getEvents((startEvent, stopEvent - 1)) # get events within frame
                 for ev in events:                                                     # check for stopping
                     if ev.type == 'test' and ev.value == 'end':
@@ -131,31 +134,33 @@ while run:
                 # yielding NoneType for data, which will crash; this is a workaround
                 try:
                     bufferStorage    = ftc.getData((startSample, endSample))    # grab from buffer
-                    bufferStorage    = bufferStorage.reshape(nSamples, -1)     # reshape nSamples x (time x channels)
-                    IM               = modelIM.predict_proba(bufferStorage)     # compute probability for IM
-                    ERN              = modelERN.predict_proba(bufferStorage)    # compute probability for ERN
+                    bufferStorage    = bufferStorage[:, :nChans]
+                    bufferStorage    = bufferStorage.reshape(nSamples, -1)      # reshape nSamples x (time x channels)
+                    bufferStorage    = preproc.stdPreproc(bufferStorage, [0,40], hdr)
+                    IM               = modelIM.predict_proba(abs(np.fft.fft(bufferStorage, axis = 1))**2)     # compute probability for IM
                     weightedIM       = weight.T  * IM                           # weigh IM
-                    weightedERN      = weight.T  * ERN                          # weigh ERN
-                    maxIMIdx         = np.unravel_index(np.argmax(weightedIM), weightedIM.shape) # compute the max index
-                    maxERNIdx        = np.unravel_index(np.argmax(weightedERN), weightedIM.shape)
+                    maxIMIdx         = np.unravel_index(np.argmax(weightedIM), weightedIM.shape)[0] # compute the max index
+                    bufhelp.sendEvent('clsfr.prediction.im',  1 - IM[maxIMIdx, :])
+
+
+                    endSample, _  = ftc.poll()
+                    startSample  =  endSample - 250 + 1
+                    ftc.wait(endSample + 250 - 1, -1 , timeout = 1000000)
+                    bufferStorage    = ftc.getData((startSample, endSample))
+                    bufferStorage    = bufferStorage[:, :nChans]
+                    #print(bufferStorage.shape)
+                    bufferStorage    = bufferStorage.reshape(1, -1)      # reshape nSamples x (time x channels)
+                    bufferStorage    = preproc.stdPreproc(bufferStorage, [0,40], hdr)
+                    #print('> ', startSample)
+                    ERN              = modelERN.predict_proba(bufferStorage)    # compute probability for ERN
+                    #print(ERN)
+                    # weightedERN      = weight.T  * ERN                          # weigh ERN
+                    # maxERNIdx        = np.unravel_index(np.argmax(weightedERN), weightedIM.shape)[0]
 
                     # send the events!
-                    bufhelp.sendEvent('clsf.prediction.im', 1 - IM[maxIMIdx, :])
-                    bufhelp.sendEvent('clsf.prediction.ern', 1 - ERN[maxERNIdx, :])
+                    bufhelp.sendEvent('clsfr.prediction.ern', 1 - ERN[0,:])
                 except:
                     pass
-
-
-
-
-
-
-
-
-
-
-
-
 
             print('Ending test phase\n storing data...')
             # with File(fileCalibration) as f:

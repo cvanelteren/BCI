@@ -25,41 +25,7 @@ def LogReg(data, events):
     lr.fit(data, events)
     return lr
 
-#
-# def SVM(data, events, c, type = 'target', string='default'):
-#     idxOfType       = np.where(events[:, 0] == type)[0]
-#     eventType       = events[idxOfType, :]
-#     dataType        = data[idxOfType, :, :]
-#
-#     reshapedDataType = dataType.reshape(dataType.shape[0],-1)
-#     # print(dataType.shape, eventType)
-#
-#     uniqueLabels         = sorted(list(set(eventType[:, 1])))
-#     label_to_int         = dict((l, i) for i, l in enumerate(uniqueLabels))
-#     int_to_label          = dict((i, l) for i, l in enumerate(uniqueLabels))
-#
-#     filepath_l2i = 'l2i_' + string +'.pkl'
-#     filepath_i2l = 'i2l_' + string +'.pkl'
-#     pickle.dump(label_to_int,open(filepath_l2i,'wb'))
-#     pickle.dump(int_to_label,open(filepath_i2l,'wb'))
-#
-#     convertedLabels      = []
-#     for label in eventType[:, 1]:
-#         convertedLabels.append([label_to_int[label]])
-#
-#     tmp = np.array(convertedLabels)
-#
-#     test = MultiLabelBinarizer().fit_transform(tmp)
-#
-#     from sklearn import svm
-#     # model = OneVsRestClassifier(svm.SVC(probability = 1))
-#     # cw = {1: 1/4., 2: 1/4.,3:1/8.,4:1/4.}
-#     model  = OneVsRestClassifier(\
-#     svm.SVC(C = c, class_weight = 'balanced', kernel = 'rbf', probability=1))
-#     # print(eventType[:,1].shape)
-#     model.fit(reshapedDataType, test)
-#     # returns trained modelocData, ev
-#     return model, reshapedDataType, test
+
 
 
 
@@ -69,7 +35,7 @@ def SVM(data, events, numCrossFold = 2):
     feedbackEventsIdx   = np.where(events[:,0] == 'feedback')[0]
 
     reshapeData = data.reshape(data.shape[0],-1)
-    datasetIM   = [reshapeData[targetEventIdx, :],
+    datasetIM   = [abs(np.fft.fft(reshapeData[targetEventIdx, :], axis = 0))**2,
                     events[targetEventIdx, 1]]     # input for IM model
 
     datasetERN  = [reshapeData[feedbackEventsIdx,:],
@@ -85,9 +51,9 @@ def SVM(data, events, numCrossFold = 2):
     # obtain the optimal model
     c = gs(model, parameters, cv = numCrossFold, verbose = 1, n_jobs = 8)
     c.fit(*datasetIM)
-    print(np.max(c.cv_results_['mean_test_score']))
+    print('IM', np.max(c.cv_results_['mean_test_score']))
     modelIM = c.best_estimator_                                     # optimal model action
-    print('Mean test validation score\n', c.cv_results_['mean_test_score'])
+    # print('Mean test validation score\n', c.cv_results_['mean_test_score'])
 
 
     print('Training ERN classifier')
@@ -97,11 +63,11 @@ def SVM(data, events, numCrossFold = 2):
 
     c                       = gs(model, parameters, cv = numCrossFold, verbose = 1, n_jobs= 8)
     c.fit(*datasetERN)
-    print(np.max(c.cv_results_['mean_test_score']))
+    print('ERN',np.max(c.cv_results_['mean_test_score']))
     modelERN                = c.best_estimator_
     print(modelERN)
     print(modelIM)             # optimal model ERN
-    print('Mean test validation score\n', c.cv_results_['mean_test_score'])
+    # print('Mean test validation score\n', c.cv_results_['mean_test_score'])
 
     # modelERN.fit(*datasetERN)
     modelIM.fit(*datasetIM)

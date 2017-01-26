@@ -15,7 +15,7 @@ mainly related to visual and thus can be tweaked to whatever we like
 
 close('all')
 
-figg, ax = subplots(1,1)
+fig, ax = subplots(1,1)
 subplots_adjust(left=0, right=1, top=1, bottom=0)
 # from matplotlib import pyplot as plt
 # mng = get_current_fig_manager()
@@ -53,6 +53,8 @@ def press(event):
     elif event.key == 'escape':
         phase = 3
 
+        
+call(['gnome-terminal', '-x', 'python','signalProcessingV2.py'])
 def waitForKeyPress():
     global phase
     global returncode
@@ -62,15 +64,15 @@ def waitForKeyPress():
     while alpha:
         if phase == 1:
             alpha = False
-            returncode = call(['python','calibration.py'])
+            returncode = call(['gnome-terminal','-x', 'python','calibration.py'])
         elif phase == 2:
         	alpha = False
-        	returncode = call(['python','CybathlonAdapter.py'])
+        	returncode = call(['gnome-terminal', '-x', 'python','CybathlonAdapter.py'])
         elif phase == 3:
             alpha = False
             running = False
             returncode = 42
-            plt.close(figg)
+            plt.close(fig)
         pause(.1)
 
 # set background
@@ -79,7 +81,7 @@ ax.set_facecolor('black')
 ax.set_xticks([])
 ax.set_yticks([])
 
-figg.canvas.mpl_connect('key_press_event', press)
+fig.canvas.mpl_connect('key_press_event', press)
 
 # display welcome text
 # create a figgure which is full screen in first place TODO

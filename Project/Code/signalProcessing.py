@@ -95,7 +95,7 @@ while run:
 
             modelIM, modelERN = classification.SVM(procData, events)
             bufhelp.sendEvent("training", "done")
-
+            print('Training done')
         # interface with the game
         elif e.value == "test":
             print("Feedback phase")
@@ -188,8 +188,8 @@ while run:
                             maxERN = np.unravel_index(maxERN, predsERN.shape)[0] # obtain correct row
 
                             # print('>', maxPredIM)
-                            bufhelp.sendEvent('clsfr.prediction.im', 1 - predsIM[maxIM,:])
-                            bufhelp.sendEvent('clsfr.prediction.ern',1 - predsERN[maxERN, :])
+                            bufhelp.sendEvent('clsfr.prediction.im', 1 - predsIM[maxIM[0],:])
+                            bufhelp.sendEvent('clsfr.prediction.ern',1 - predsERN[maxERN[0], :])
                             #bufhelp.sendEvent('clsfr.prediction.im', pred)
                             predsIM = []
                             predsERN = []
