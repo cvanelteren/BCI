@@ -131,11 +131,11 @@ while run:
                 # yielding NoneType for data, which will crash; this is a workaround
                 try:
                     bufferStorage    = ftc.getData((startSample, endSample))    # grab from buffer
-                    bufferStorage    =  bufferStorage.reshape(nSamples, -1)     # reshape nSamples x (time x channels)
+                    bufferStorage    = bufferStorage.reshape(nSamples, -1)     # reshape nSamples x (time x channels)
                     IM               = modelIM.predict_proba(bufferStorage)     # compute probability for IM
                     ERN              = modelERN.predict_proba(bufferStorage)    # compute probability for ERN
-                    weightedIM       = weight.dot(IM)                           # weigh IM
-                    weightedERN      = weight.dot(ERN)                          # weigh ERN
+                    weightedIM       = weight.T  * IM                           # weigh IM
+                    weightedERN      = weight.T  * ERN                          # weigh ERN
                     maxIMIdx         = np.unravel_index(np.argmax(weightedIM), weightedIM.shape) # compute the max index
                     maxERNIdx        = np.unravel_index(np.argmax(weightedERN), weightedIM.shape)
 
