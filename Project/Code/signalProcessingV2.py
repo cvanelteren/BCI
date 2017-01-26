@@ -140,7 +140,7 @@ while run:
                     IM               = modelIM.predict_proba(abs(np.fft.fft(bufferStorage, axis = 1))**2)     # compute probability for IM
                     weightedIM       = weight.T  * IM                           # weigh IM
                     maxIMIdx         = np.unravel_index(np.argmax(weightedIM), weightedIM.shape)[0] # compute the max index
-                    bufhelp.sendEvent('clsfr.prediction.im',  1 - IM[maxIMIdx, :])
+                    bufhelp.sendEvent('clsfr.prediction.im',  IM[maxIMIdx, :])
 
 
                     endSample, _  = ftc.poll()
@@ -158,7 +158,7 @@ while run:
                     # maxERNIdx        = np.unravel_index(np.argmax(weightedERN), weightedIM.shape)[0]
 
                     # send the events!
-                    bufhelp.sendEvent('clsfr.prediction.ern', 1 - ERN[0,:])
+                    bufhelp.sendEvent('clsfr.prediction.ern', ERN[0,:])
                 except:
                     pass
 

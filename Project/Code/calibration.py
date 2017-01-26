@@ -18,13 +18,13 @@ Instructions :
 
 # PARAMETERS
 # prespecified number of targets
-nTrials             = 10
+nTrials             = 60
 dt                  = .1              # multiplication factor (time step)
 targetDuration      = 20              # target show time
 feedbackDuration    = 10              # feedback show time
 restDuration        = 15              # duration of rest
 proportionNegative  = 1/3             # proportion of negative feedback
-breakTrial          = 15              # break after x trials
+breakTrial          = 120              # break after x trials
 
 
 # connect with the buffer
