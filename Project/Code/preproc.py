@@ -193,59 +193,125 @@ def stdPreproc(data, band,  hdr, cap = None):
 
     return data
 
-def rickerWavelet(binnedData, nWavelet = 20):
-    sizeOfWavelets = logspace(.1, 1.7, nWavelet) # this goes to about 50 hz, more weighting on the lower end
+def rickerWavelet(binnedData, nWavelet = 20, want = 'Pz', plotPos = 1,
+                plotMin = -.4, plotMax = .4):
+    import seaborn as sb
+    from matplotlib import ticker
+    # sizeOfWavelets = logspace(.1, 1.31, nWavelet) # this goes to about 50 hz, more weighting on the lower end
+    sizeOfWavelets = linspace(.001, 15, 25)
     convolutedData = {}
     for type, data in binnedData.iteritems():
         cw = scipy.signal.cwt(data.flatten(), scipy.signal.ricker, sizeOfWavelets)
         cw = cw.reshape(cw.shape[0], data.shape[0], data.shape[1], data.shape[2])   # algorithm expects 1 d array
-        convolutedData[type] = cw                                                  # reshape back
+        convolutedData[type] = cw
+        # print(cw.shape)                                           # reshape back
 
-    # make figure for negative positive
-    fig, axs = subplots(5,2)
-    for i, (ax, sensor) in enumerate(zip(axs.flatten(), cap)):
-        pos = convolutedData['positive'][:, :, i]
-        neg = convolutedData['negative'][:, :, i]
-        pos = mean(pos, 1)
-        neg = mean(neg, 1)
-        im  = ax.imshow( (pos - neg), origin = 'lower',
-                  extent = [0, 600, sizeOfWavelets[0], sizeOfWavelets[-1]])
-        # print(im)
-        colorbar(im, ax = ax)# cax = ax)
+    if plotPos:
+        # make figure for negative positive
+        fig, axs = subplots(5,2, sharex = 'all', sharey = 'all')
+        axx = fig.add_subplot(111,frameon = 0)
+        # mng         = get_current_fig_manager()
+        # mng.full_screen_toggle()
+        axx.grid('off')
+        for i, (ax, sensor) in enumerate(zip(axs.flatten(), cap)):
+            pos = convolutedData['positive'][..., i]
+            neg = convolutedData['negative'][..., i]
+            pos = mean(pos, 1)
+            neg = mean(neg, 1)
+            # print(pos.shape)
+            im  = ax.imshow( (pos - neg), origin = 'lower',
+                      extent = [0, 600, sizeOfWavelets[0], sizeOfWavelets[-1]],
+                      interpolation = 'None', aspect = 'auto', cmap = 'viridis',
+                      vmin = plotMin, vmax = plotMax)
+            # print(im)
+            tick = ticker.MaxNLocator(nbins = 4)
+            cc = colorbar(im, ax = ax)# cax = ax)
+            cc.set_label = 'Power'
+            cc.locator = tick
+            cc.update_ticks()
+            ax.grid('off')
+            ax.set_title(sensor[0])
+        subplots_adjust(hspace = .6)
+
+        fig.suptitle('Pos - neg')
+        xlabel('Time [ms]')
+        ylabel('Frequency [Hz]')
+        tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
+        savefig('../Figures/feedback')
+        # show()
+
+    labels      = ['feet', 'left hand', 'right hand', 'rest']
+    titleLabels = ['Feet', 'Left Hand', 'Right hand', 'Rest']
+    for titleLabel, datasetLabel in zip(titleLabels, labels):
+        fig, axs = subplots(5,2)
+        mng         = get_current_fig_manager()              # full_screen_toggle
+        mng.full_screen_toggle()
+        fig.suptitle(titleLabel)
+        axx = fig.add_subplot(111, frameon = 0)
+        axx.grid('off')
+        dataset = convolutedData[datasetLabel]
+        dataset = np.mean(dataset, 1)
+        for i, (ax, sensor) in enumerate(zip(axs.flatten(), cap)):
+
+            im = ax.imshow(dataset[..., i],
+                    interpolation = 'bicubic',
+                    aspect = 'auto', origin = 'upper',
+                    extent = [0, 600, sizeOfWavelets[0], sizeOfWavelets[-1]],
+                    cmap = 'viridis')#, vmin = plotMin, vmax = plotMax)
+            ax.set_title(sensor[0])
+            ax.grid('off')
+            cc = colorbar(im, ax = ax)
+            cc.set_label('Power')
+            tick = ticker.MaxNLocator(nbins = 3)
+            cc.locator = tick
+            cc.update_ticks()
         ax.set_title(sensor[0])
-    subplots_adjust(hspace = .5)
-    fig.suptitle('Pos - neg')
-    labels = ['feet', 'left hand', 'right hand', 'rest']
-    # make figure for negative positive
-    fig, axs = subplots(5,2)
-    fig.add_subplot(111)
-    for i, (ax, sensor) in enumerate(zip(axs.flatten(), cap)):
-        feet      = convolutedData['feet'][:, :, i]
-        leftHand  = convolutedData['left hand'][:, :, i]
-        rightHand = convolutedData['right hand'][:, :, i]
-        rest      = convolutedData['rest'][:, :, i]
 
+        subplots_adjust(hspace = .6)
+        ylab = 'Frequency [Hz]'
+        xlab = 'Time[ms]'
+        xlabel(xlab, fontsize = 20)
+        ylabel(ylab, fontsize = 20)
+        tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
 
-        # feet = mean(feet, 1)
-        # leftHand = mean(leftHand, 1)
-        # rightHand  = mean(rightHand, 1)
-        # rest      = mean(rest, 1)
-        print(feet.shape)
-        data = [feet, leftHand, rightHand, rest]
-        for idx, datai in enumerate(data):
-            ax.imshow(datai[:,i], origin = 'lower',
-            extent = [0, 600, sizeOfWavelets[0], sizeOfWavelets[-1]])
+        sb.set_context('poster')
+        savefig('../Figures/Condition = ' + titleLabel)
+        # show()
 
-        ax.set_title(sensor[0])
-    ax.legend(labels, ncol = len(labels),
-            loc = 'upper center', bbox_to_anchor = (-.15, -.5)) # centers under all subplots
-    ylab = 'mV'
-    xlab = 'Time[ms]'
-    xlabel(xlab, fontsize = 20)
-    ylabel(ylab, fontsize = 20)
+    # show particular electrode all locations [parsed as want]
+    electrode   = np.where(cap[:,0] == want)[0]
+    fig, ax     = subplots(2,2, sharex = 'all', sharey = 'all')
+           # full_screen_toggle
+
+    axx         = fig.add_subplot(111, frameon = False)
+    mng         = get_current_fig_manager()
+    mng.full_screen_toggle()
+    fig.suptitle(want)
+    axx.grid('off')
+    for axi, label, titleLabel in zip(ax.flatten(), labels, titleLabels):
+        dataset = convolutedData[label]
+        dataset = np.mean(dataset, 1)
+        # print(dataset[..., electrode].shape)d
+        im     = axi.imshow(dataset[..., electrode].squeeze(),
+        extent = [0, 600, sizeOfWavelets[0], sizeOfWavelets[-1]], aspect = 'auto',
+        origin = 'lower', cmap = 'viridis',
+        interpolation = 'bicubic',
+        vmin = plotMin, vmax = plotMax)
+        sb.set_context('poster')
+        axi.set_title(titleLabel)
+        axi.grid('off')
+        tick = ticker.MaxNLocator(nbins = 3)
+        colorbar(im, ax = axi)
+        cc.locator = tick
+        cc.update_ticks()
+    xlabel('Time [ms]',      fontsize = 20)
+    ylabel('Frequency [Hz]', fontsize = 20)
+    axx.tick_params(axis = 'y', pad = 20)
+    sb.set_context('poster')
     tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
-    subplots_adjust(hspace = .5)
-    show()
+    savefig('../Figures/allConditions')
+    # show()
+        # assert 0
 
 
 
@@ -256,6 +322,7 @@ def rickerWavelet(binnedData, nWavelet = 20):
 if __name__ == '__main__':
     from scipy import signal
     from h5py import File
+    import mne
     import sklearn.preprocessing
     with File('../Data/calibration_subject_4.hdf5', 'r') as f:
         rawData = f['rawData'].value
@@ -263,15 +330,35 @@ if __name__ == '__main__':
         events  = f['events'].value
         cap     = f['cap'].value
 
-        procData = stdPreproc(rawData, [0, 40], 250 )
+        # procData = stdPreproc(rawData, [0, 40], 250 )
         # procData = stdPreproc(rawData,[0, 40], 250, cap)
         # procData = stdPreproc(tmp, [0, 50], 100)
-        binnedData = eventSeparator(procData, events)
-        plotERP(binnedData, cap)
-        # rickerWavelet(binnedData)
-        print(binnedData['feet'].shape)
+        procData   = stdPreproc(rawData, [0, 40], 250)
+        binnedData = eventSeparator(rawData, events)
         # plotERP(binnedData, cap)
         # rickerWavelet(binnedData)
+        # rickerWavelet(binnedData)
+        #
+        # pos = binnedData['negative']
+        # mpos = np.mean(pos,0)
+        # mpos = np.mean(mpos[:25], 0)
+        # print(mpos.shape)
+        # font = {'family' : 'normal',
+        # 'weight' : 'bold', 'size'   : 22}
+        # head_pos = {'center': cap[:,1], 'scale': cap[:,2]}
+        # matplotlib.rc('font', **font)
+        # da = array([cap[:,1], cap[:,2]], dtype = int)
+        #
+        # x = np.sin(da[0,:]) * np.cos(da[1,:])
+        # y = np.sin(da[0,:]) * np.sin(da[1,:])
+        # pos = np.vstack((x,y))
+        # print(pos.shape)
+        # mne.viz.plot_topomap(mpos, pos.T, names = cap[:,0], sensors = False, show_names = True, vmin = -1, vmax = 1)
+        #
+        # layout = mne.channels.read_layout('../../Buffer/resources/caps/cap_tmsi_mobita_im.txt')
+        # print(layout)
+        # plotERP(binnedData, cap)ricker
+        rickerWavelet(binnedData)
 
 
         # plotERP(test, events, )
