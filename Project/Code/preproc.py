@@ -128,12 +128,12 @@ def stdPreproc(data, band,  hdr, cap = None, calibration = 1):
 
     if calibration :
         # remove channels with high power
-        _, remove  = np.where(power > meanPower + 3 * stdPower)
+        #_, remove  = np.where(power > meanPower + 3 * stdPower)
         # print(power, meanPower, remove, power.shape)
-        uniques    = np.unique(remove)
+        #uniques    = np.unique(remove)
         channels   = np.ones(data.shape[-1], dtype = bool)
-        channels[uniques] = 0
-        data       = data [..., channels]
+        #channels[uniques] = 0
+        #data       = data [..., channels]
     else:
         channels = None
         # print((channels-1)*-1, channels)
@@ -143,6 +143,7 @@ def stdPreproc(data, band,  hdr, cap = None, calibration = 1):
     tmp        = data.reshape(-1)
     tmp        = (tmp - np.mean(tmp,0)) / np.std(tmp, 0)
     data       = tmp.reshape(data.shape)
+    print(data.shape)
 
     #temporal filter
     data        = butterFilter(data, band = band, hdr = hdr)

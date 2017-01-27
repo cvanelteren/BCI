@@ -56,7 +56,7 @@ def press(event):
         phase = 3
 
 
-call(['gnome-terminal', '-x', 'python','signalProcessingV2.py'])
+#call(['gnome-terminal', '-x', 'python','signalProcessingV2.py'])
 def waitForKeyPress():
     global phase
     global returncode

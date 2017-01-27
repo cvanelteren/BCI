@@ -109,7 +109,7 @@ while run:
 
             print('IM data shape', dataIM.shape)
             print('ERN data shape', dataERN.shape)
-            filterBand = [0, 40]                                                     # filter range
+            filterBand = np.array([0, 40])                                                     # filter range
             procDataIM, chanSelectIM   = preproc.stdPreproc(dataIM, filterBand, hdr,  cap  = capFile)
             procDataERN, chanSelectERN = preproc.stdPreproc(dataERN, filterBand, hdr, cap = capFile)
             with File(fileCalibration, 'w') as f:
@@ -147,21 +147,23 @@ while run:
                 # boolean for removed channels
                 chanSelectIM = f['chanSelector/IM'].value
                 chanSelectERN = f['chanSelector/ERN'].value
+	    print(procDataIM.shape)
             modelIM  = classification.SVM(procDataIM, eventsIM)
             modelERN = classification.SVM(procDataERN, eventsERN)
 
             bufhelp.sendEvent("training", "done")
 
         # interface with the game
-        elif e.value == "test":
+        elif e.value == "test1" or e.value == "test2":
             print("Feedback phase")
             # idx,
-            e = ftc.getEvents()[-1]
+
+            #e = ftc.getEvents()[-1]
             # print(e[-1])
             useERN = False
             try:
                 print(e.value, e.type)
-                if e.value == str(2):
+                if e.value == "test2":
                     useERN = True
             except:
                 continue
@@ -200,13 +202,14 @@ while run:
                 # the try command is here because when debugging the event viewer freezes
                 # yielding NoneType for data, which will crash; this is a workaround
                 # try:
-
+		
                 bufferStorage    = ftc.getData((startSample, endSample))    # grab from buffer
                 bufferStorage    = bufferStorage[:, :nChans]
                 bufferStorage    = bufferStorage[:, chanSelectIM]
                 bufferStorage    =  bufferStorage.reshape(nSamplesIM, nTimePointsIM, bufferStorage.shape[-1])
                 bufferStorage, _ = preproc.stdPreproc(bufferStorage, [0,40], hdr, calibration = 0)
-                bufferStorage    = bufferStorage.reshape(nPointsIM, -1).T      # reshape nPointsIM x (time x channels)
+                bufferStorage    = bufferStorage.reshape(nSamplesIM,-1)     # reshape nPointsIM x (time x channels)
+		print(bufferStorage.shape)
                 IM               = modelIM.predict_proba(abs(np.fft.fft(bufferStorage, axis = 1))**2)     # compute probability for IM
 
                 weightedIM       = ( weightIM * IM.T ).T
