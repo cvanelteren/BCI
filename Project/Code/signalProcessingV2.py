@@ -5,11 +5,7 @@ from    systemHelper        import checkOverwrite
 from    scipy               import signal
 
 
-import sklearn
-import warnings
-import classification, preproc, bufhelp, os
-import numpy as np
-import time
+import sklearn, pickle, classification, preproc, bufhelp, os
 
 from scipy.signal import detrend
 ftc, hdr = bufhelp.connect() # connect to buffer
@@ -202,7 +198,7 @@ while run:
                 # the try command is here because when debugging the event viewer freezes
                 # yielding NoneType for data, which will crash; this is a workaround
                 # try:
-		
+
                 bufferStorage    = ftc.getData((startSample, endSample))    # grab from buffer
                 bufferStorage    = bufferStorage[:, :nChans]
                 bufferStorage    = bufferStorage[:, chanSelectIM]
@@ -243,7 +239,7 @@ while run:
 
             print('Ending test phase\n storing data...')
             fileTest = checkOverwrite(dataDir, 'test', subjectNumber, fileType = '.p')
-            with open(fileTest) as f:
+            with open(fileTest,'w') as f:
                 pickle.dump(saveData, f)
 
 

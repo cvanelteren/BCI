@@ -62,7 +62,7 @@ def SVM(data, events, numCrossFold = 2, fft = 0):
                     'C':np.linspace(.01, 3,20)}
     # cw         = {'left hand':5, 'right hand':5, 'feet':5, 'rest':1} # class weights : deprecated!
 
-
+    classWeights = 'balanced'
     model = sklearn.svm.SVC(class_weight = classWeights, probability = 1)       # probabilities are odd --> take argmin or argmax 1 - p
     cv    = gs(model, parameters, cv = numCrossFold, verbose = 1, n_jobs = multiprocessing.cpu_count())
     cv.fit(data, events[:,1])
