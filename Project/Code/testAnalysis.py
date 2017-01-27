@@ -5,8 +5,8 @@ import sklearn, sklearn.preprocessing
 import scipy
 from h5py import File
 import preproc
-num = 12
-with File('../Data/calibration_subject_{0}.hdf5'.format(num)) as f:
+num = 28
+with File('../Data/calibration_subject_MOCK_{0}.hdf5'.format(num)) as f:
     for i in f: print(i)
     # assert 0
     e = f['events'].value

@@ -6,8 +6,25 @@ import numpy as np
 
 def plotERP(data, events, cap):
     uniques = np.unique(events[:,1])
-
+    fig, axes = subplots(5,2)
+    mainFrame = fig.add_subplot(111, frameon = 0)
     for unique in uniques:
+        idx       = np.where(events[:, 1] == unique)[0] # get rows
+        plotData  = np.mean(data[idx,...], 0 )
+        for idx, ax in enumerate(axes.flatten()):
+            try:
+                ax.plot(plotData[..., idx], label = unique)
+                ax.legend()
+                ax.set_title(cap[idx, 0])
+            except:
+                pass
+
+        subplots_adjust(hspace = .4)
+        mainFrame.set_xlabel('Time[ms]')
+        mainFrame.set_ylabel('mV')
+
+    show()
+
 
 
 
@@ -131,12 +148,6 @@ def rickerWavelet(binnedData, nWavelet = 20, want = 'Pz', plotPos = 1,
     # show()
         # assert 0
 
-if __name__ = '__main__':
-    from h5py import File
-    with File('calibration_subject_MOCK_22.hdf5') as f:
-        procDataIM = f['procData/IM'].value
-
-
 
 def eventSeparator(data, events):
     '''
@@ -148,3 +159,13 @@ def eventSeparator(data, events):
         idx                   = np.where(events[:,1] == event)  # find corresponding indices
         eventStorage[event]   = data[idx, :, :].squeeze()       # squeeze out the 0 dimension
     return eventStorage
+
+if __name__ == '__main__':
+    from h5py import File
+    with File('../Data/calibration_subject_MOCK_27.hdf5') as f:
+        for i in f: print(i)
+        procDataIM = f['procData/IM'].value
+        eventsIM   = f['events/IM'].value
+
+    print(procDataIM.shape)
+    plotERP(procDataIM, eventsIM, cap = None)

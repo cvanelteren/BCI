@@ -241,7 +241,7 @@ while run:
             print('Ending test phase\n storing data...')
             fileTest = checkOverwrite(dataDir, 'test', subjectNumber, fileType = '.p')
             with open(fileTest) as f:
-                pickle.dump(saveData)
+                pickle.dump(saveData, f)
 
 
         elif e.value == "exit":
