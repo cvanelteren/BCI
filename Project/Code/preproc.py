@@ -46,7 +46,7 @@ def badChannelRemoval(data, x = 3):
     '''
     std = np.std(data)
     # filter with x standard deviations
-    events, time, badChans = np.where(abs(data) <  x * std) # bug fixed, i did the  reverse selection!
+    events, time, badChans = np.where(abs(data) >  x * std) # bug fixed, i did the  reverse selection!
     # set all channels to useablewith File(fileCalibration) as f:
                 # testData = np.array(testData)
                 # f.create_dataset('test', data = testData)
@@ -54,7 +54,7 @@ def badChannelRemoval(data, x = 3):
     useable = np.ones(data.shape[-1], dtype = bool)
 
     # if there is an outlier dont use that channel
-    useable[np.unique(badChans)] = True
+    useable[np.unique(badChans)] = False
     return useable
 
 
@@ -173,29 +173,43 @@ def stdPreproc(data, band,  hdr, cap = None, test = 1):
             Removes bad channels
             Filters the data
     '''
+    # linear detrending
+    data       = scipy.signal.detrend(data, axis = 1)
 
-    data        = detrend(data)                        # detrend
-    if not test:
-        useable     = badChannelRemoval(data, x = 2)       # remove bad channels
-        data        = data[..., useable]                  # remove the bad channels
-    data        = car(data)                            # spatial filter
+    # bad channel removal
+    power      = np.sum(abs(np.fft.fft(data, axis = 1))**2, 0)
+    # rData      = data.reshape(-1, data.shape[-1])       # keep channels cat epochs + time
+    # power      = abs(np.fft.fft(rData, axis = 0))**2    # total power(?)
 
-    # tmp         = sklearn.preprocessing.normalize(data.flatten(), axis = 0) #feature normalization
-    # data        = tmp.reshape(data.shape)
+    meanPower  = np.mean(power, axis = 0)               # mean channel power
+    stdPower   = np.std(power,  axis = 0)               # variance channel power
 
+    # remove channels with high power
+    _, remove  = np.where(power > meanPower + 3 * stdPower)
+    # print(power, meanPower, remove, power.shape)
+    uniques    = np.unique(remove)
+    channels   = np.ones(data.shape[-1], dtype = bool)
+    channels[uniques] = 0
+    data       = data [..., channels]
+    # print((channels-1)*-1, channels)
+    # print('Removing channels', remove)
+
+    # feature normalization
     tmp        = data.reshape(-1)
     tmp        = (tmp - np.mean(tmp,0)) / np.std(tmp, 0)
-    data        = tmp.reshape(data.shape)
+    data       = tmp.reshape(data.shape)
 
+    #temporal filter
+    data        = butterFilter(data, band = band, hdr = hdr)
 
-    data        = butterFilter(data,            # temporal filter
-                               band = band,
-                               hdr = hdr)
+    # spatial filter
+    data        = car(data)
+
 
     if cap != None:
-        print('Removing cdatahannels :\n', cap[useable == False])
+        print('Removing cdatahannels :\n', cap[(channels-1)*-1, 0])
 
-    return data
+    return data, channels
 
 def rickerWavelet(binnedData, nWavelet = 20, want = 'Pz', plotPos = 1,
                 plotMin = -.4, plotMax = .4):
@@ -328,16 +342,17 @@ if __name__ == '__main__':
     from h5py import File
     import mne
     import sklearn.preprocessing
-    with File('../Data/calibration_subject_4.hdf5', 'r') as f:
-        rawData = f['rawData'].value
-        procData = f['processedData'].value
-        events  = f['events'].value
-        cap     = f['cap'].value
+    with File('../Data/calibration_subject_MOCK_22.hdf5', 'r') as f:
+        rawData = f['rawData/IM'].value
+        procData = f['procData/IM'].value
+        # events  = f['events'].value
+        # cap     = f['cap'].value
 
 
         procData   = stdPreproc(rawData, [0, 14], 250)
-        binnedData = eventSeparator(procData, events)
-        rickerWavelet(binnedData)
+
+        # binnedData = eventSeparator(procData, events)
+        # rickerWavelet(binnedData)
         # ft = abs(np.fft.fft(procData, axis = 1))**2
         #
         # fig, ax = subplots()
@@ -367,7 +382,7 @@ if __name__ == '__main__':
         # layout = mne.channels.read_layout('../../Buffer/resources/caps/cap_tmsi_mobita_im.txt')
         # print(layout)
         # plotERP(binnedData, cap)ricker
-        rickerWavelet(binnedData)
+        # rickerWavelet(binnedData)
 
 
         # plotERP(test, events, )

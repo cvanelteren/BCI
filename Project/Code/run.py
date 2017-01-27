@@ -13,6 +13,8 @@ mainly related to visual and thus can be tweaked to whatever we like
 '''
 
 
+call(['python', 'moduleInstallers.py'])                 # check if all packages are installed
+
 close('all')
 
 fig, ax = subplots(1,1)
@@ -53,7 +55,7 @@ def press(event):
     elif event.key == 'escape':
         phase = 3
 
-        
+
 call(['gnome-terminal', '-x', 'python','signalProcessingV2.py'])
 def waitForKeyPress():
     global phase
