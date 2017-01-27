@@ -200,6 +200,7 @@ print(hdr)
 print(version)
 
 bufhelp.sendEvent('start', 'test')
+bufhelp.sendEvent('mode', str(version))
 # Receive events from the buffer and process them.
 # Receive events until we stop.
 global running

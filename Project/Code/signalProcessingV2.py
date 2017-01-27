@@ -33,6 +33,7 @@ if hdr.fSample == 100:                          # debug case
     # hdf = 250
 # storage file
 fileCalibration     = dataDir + conditionType + str(subjectNumber) + '.hdf5'
+fileTest            = dataDir + 'test' + str(subjectNumber) + '.p'
 # BUFFER PARAMETERS
 trialLenIM          = 1000 # msec
 trialLenERN         = 600  # msec
@@ -130,6 +131,7 @@ while run:
 
         # load data from disk; train classifier
         elif e.value == "train":
+
             print('Loading from ' + fileCalibration)
             print("Training classifier")
             with File(fileCalibration, 'r') as f:
@@ -153,6 +155,17 @@ while run:
         # interface with the game
         elif e.value == "test":
             print("Feedback phase")
+            # idx,
+            e = ftc.getEvents()[-1]
+            # print(e[-1])
+            useERN = False
+            try:
+                print(e.value, e.type)
+                if e.value == str(2):
+                    useERN = True
+            except:
+                continue
+            print('Use ERN?', useERN)
             # PARAMETERS
             plotTime = 3
             # nPointsTrial  = int((trialLenIM/1e3) / dt)
@@ -162,11 +175,10 @@ while run:
             nSamplesIM          =  int(nTimePointsIM * plotTime *  dt)
 
             nPointsIM           = nSamplesIM * nTimePointsIM
-            print(nPointsIM, nSamplesIM)
-            weight = np.exp(- np.linspace(nSamplesIM, 0, nTimePointsIM))
+            # print(nPointsIM, nSamplesIM, nTimePointsIM)
+            weightIM            = np.exp(- np.linspace(nSamplesIM, 0, nSamplesIM))
 
-            print(weight.shape)
-
+            saveData = {'IM data' : [], 'IM pred': [], 'ERN data': [], 'ERN pred': []}
             print('Sampling rate', hdr.fSample)
             # timeSec = linspace(-nPointsIM, 0, nPointsIM)
             # print(nPointsIM)
@@ -188,49 +200,50 @@ while run:
                 # the try command is here because when debugging the event viewer freezes
                 # yielding NoneType for data, which will crash; this is a workaround
                 # try:
+
                 bufferStorage    = ftc.getData((startSample, endSample))    # grab from buffer
                 bufferStorage    = bufferStorage[:, :nChans]
                 bufferStorage    = bufferStorage[:, chanSelectIM]
-                bufferStorage =  bufferStorage.reshape(nSamplesIM, nTimePointsIM, bufferStorage.shape[-1])
-                bufferStorage, _     = preproc.stdPreproc(bufferStorage, [0,40], hdr, calibration = 0)
+                bufferStorage    =  bufferStorage.reshape(nSamplesIM, nTimePointsIM, bufferStorage.shape[-1])
+                bufferStorage, _ = preproc.stdPreproc(bufferStorage, [0,40], hdr, calibration = 0)
                 bufferStorage    = bufferStorage.reshape(nPointsIM, -1).T      # reshape nPointsIM x (time x channels)
-                print(bufferStorage.shape)
                 IM               = modelIM.predict_proba(abs(np.fft.fft(bufferStorage, axis = 1))**2)     # compute probability for IM
 
-                weightedIM       = weight.T  * IM
-                assert 0                          # weigh IM
+                weightedIM       = ( weightIM * IM.T ).T
+                  # weigh IM
                 maxIMIdx         = np.unravel_index(np.argmax(weightedIM), weightedIM.shape)[0] # compute the max index
                 bufhelp.sendEvent('clsfr.prediction.im',  IM[maxIMIdx, :])
+                saveData['IM data'].append(bufferStorage)
+                saveData['IM pred'].append(weightedIM)
+
+                if useERN:
+                    endSample, _  = ftc.poll()
+                    startSample  =  endSample - nPointsERN + 1
+                    ftc.wait(endSample + nPointsERN - 1, -1 , timeout = 1000000)
+                    bufferStorage    = ftc.getData((startSample, endSample))
+                    bufferStorage    = bufferStorage[:, :nChans]
+                    bufferStorage    = bufferStorage[:, chanSelectERN]
 
 
-                endSample, _  = ftc.poll()
-                startSample  =  endSample - nPointsERN + 1
-                ftc.wait(endSample + nPointsERN - 1, -1 , timeout = 1000000)
-                bufferStorage    = ftc.getData((startSample, endSample))
-                bufferStorage    = bufferStorage[:, :nChans]
-                bufferStorage    = bufferStorage[:, chanSelectERN]
-                print(bufferStorage.shape)
-                #print(bufferStorage.shape)
-                bufferStorage    = bufferStorage.reshape(1, -1).T      # reshape nPointsIM x (time x channels)
-                bufferStorage, _    = preproc.stdPreproc(bufferStorage, [0,40], hdr)
-                #print('> ', startSample)
-                ERN              = modelERN.predict_proba(bufferStorage)    # compute probability for ERN
-                #print(ERN)
-                # weightedERN      = weight.T  * ERN                          # weigh ERN
-                # maxERNIdx        = np.unravel_index(np.argmax(weightedERN), weightedIM.shape)[0]
+                    bufferStorage    = bufferStorage.reshape(1, -1)      # reshape nPointsIM x (time x channels)
 
-                # send the events!
-                bufhelp.sendEvent('clsfr.prediction.ern', ERN[0,:])
-                # except:
-                #     pass
+                    bufferStorage, _    = preproc.stdPreproc(bufferStorage, [0,40], hdr, calibration = 0)
+
+
+                    #print('> ', startSample)
+                    ERN              = modelERN.predict_proba(bufferStorage)    # compute probability for ERN
+
+                    # send the events!
+                    bufhelp.sendEvent('clsfr.prediction.ern', ERN[0,:])
+                    saveData['ERN data'].append(bufferStorage)
+                    saveData['ERN pred'].append(weightedIM)
 
             print('Ending test phase\n storing data...')
-            # with File(fileCalibration) as f:
-            #     testData = np.array(testData)
-            #     f.create_dataset('test', data = testData)
+            fileTest = checkOverwrite(dataDir, 'test', subjectNumber, fileType = '.p')
+            with open(fileTest) as f:
+                pickle.dump(saveData)
 
-                        # if different sample
-                    # while 3 seconds loop
+
         elif e.value == "exit":
             run = False
         # print(e.value)

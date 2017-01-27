@@ -19,7 +19,7 @@ Instructions :
 # PARAMETERS
 # prespecified number of targets
 nTrials             = 60
-dt                  = .001              # multiplication factor (time step)
+dt                  = .1              # multiplication factor (time step)
 targetDuration      = 20              # target show time
 feedbackDuration    = 10              # feedback show time
 restDuration        = 15              # duration of rest
@@ -30,7 +30,7 @@ breakTrial          = 120              # break after x trials
 # connect with the buffer
 import bufhelp
 fct, hdr = bufhelp.connect()
-bufhelp.sendEvent('start', 'calibration')
+
 
 close('all')
 
@@ -176,7 +176,7 @@ horizontalalignment = 'center',\
 verticalalignment   = 'center', \
 fontsize            = 20)
 
-
+bufhelp.sendEvent('start', 'calibration')
 for idx, target in enumerate(targets):
     # every break trials; take a break wait for user input
     if (idx % breakTrial == 0) and idx > 0:

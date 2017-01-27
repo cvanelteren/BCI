@@ -115,7 +115,7 @@ while run:
             k = 0
             bufferStorage = zeros((nPoints, nChans))
             testData = []
-
+            
             while keep:
                 # print(bufferStorage.shape, nChans)
                 # get latest samples and plot them
