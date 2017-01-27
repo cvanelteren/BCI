@@ -166,7 +166,7 @@ def car(data):
   W = np.eye(n) - 1 / float(n)
   return  data.dot(W)
 
-def stdPreproc(data, band,  hdr, cap = None, test = 1):
+def stdPreproc(data, band,  hdr, cap = None, calibration = 1):
     '''
     Function performs:
             Detrends the data
@@ -184,15 +184,18 @@ def stdPreproc(data, band,  hdr, cap = None, test = 1):
     meanPower  = np.mean(power, axis = 0)               # mean channel power
     stdPower   = np.std(power,  axis = 0)               # variance channel power
 
-    # remove channels with high power
-    _, remove  = np.where(power > meanPower + 3 * stdPower)
-    # print(power, meanPower, remove, power.shape)
-    uniques    = np.unique(remove)
-    channels   = np.ones(data.shape[-1], dtype = bool)
-    channels[uniques] = 0
-    data       = data [..., channels]
-    # print((channels-1)*-1, channels)
-    # print('Removing channels', remove)
+    if calibration :
+        # remove channels with high power
+        _, remove  = np.where(power > meanPower + 3 * stdPower)
+        # print(power, meanPower, remove, power.shape)
+        uniques    = np.unique(remove)
+        channels   = np.ones(data.shape[-1], dtype = bool)
+        channels[uniques] = 0
+        data       = data [..., channels]
+    else:
+        channels = None
+        # print((channels-1)*-1, channels)
+        # print('Removing channels', remove)
 
     # feature normalization
     tmp        = data.reshape(-1)

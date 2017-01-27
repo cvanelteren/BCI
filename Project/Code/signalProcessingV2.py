@@ -163,7 +163,9 @@ while run:
 
             nPointsIM           = nSamplesIM * nTimePointsIM
             print(nPointsIM, nSamplesIM)
-            weight = np.exp(- np.linspace(nSamplesIM, 0, nTimePointsIM))[:, None].T
+            weight = np.exp(- np.linspace(nSamplesIM, 0, nTimePointsIM))
+
+            print(weight.shape)
 
             print('Sampling rate', hdr.fSample)
             # timeSec = linspace(-nPointsIM, 0, nPointsIM)
@@ -189,16 +191,12 @@ while run:
                 bufferStorage    = ftc.getData((startSample, endSample))    # grab from buffer
                 bufferStorage    = bufferStorage[:, :nChans]
                 bufferStorage    = bufferStorage[:, chanSelectIM]
-                print(bufferStorage.shape)
                 bufferStorage =  bufferStorage.reshape(nSamplesIM, nTimePointsIM, bufferStorage.shape[-1])
-                print(bufferStorage.shape)
-                bufferStorage, _     = preproc.stdPreproc(bufferStorage, [0,40], hdr)
-                print(bufferStorage.shape)
+                bufferStorage, _     = preproc.stdPreproc(bufferStorage, [0,40], hdr, calibration = 0)
                 bufferStorage    = bufferStorage.reshape(nPointsIM, -1).T      # reshape nPointsIM x (time x channels)
-                print('after', bufferStorage.shape)
                 print(bufferStorage.shape)
                 IM               = modelIM.predict_proba(abs(np.fft.fft(bufferStorage, axis = 1))**2)     # compute probability for IM
-                print(IM)
+
                 weightedIM       = weight.T  * IM
                 assert 0                          # weigh IM
                 maxIMIdx         = np.unravel_index(np.argmax(weightedIM), weightedIM.shape)[0] # compute the max index
