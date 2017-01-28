@@ -1,13 +1,11 @@
-from    __future__          import print_function
+from    __future__          import print_function, division
 from    h5py                import File, special_dtype
 from    pylab               import *
 from    systemHelper        import checkOverwrite
 from    scipy               import signal
-import sklearn
-import warnings
-import classification, preproc, bufhelp, os
-import numpy as np
-import time
+
+
+import sklearn, pickle, classification, preproc, bufhelp, os
 
 from scipy.signal import detrend
 ftc, hdr = bufhelp.connect() # connect to buffer
@@ -22,16 +20,24 @@ nChans      = len(capFile)  # mobita outputs 37, redundant channels remove them
 # SET THE SUBJECT NUMBER
 dataDir        = '../Data/'                     # storage of directory
 conditionType  = 'calibration_subject_'         # calibration file
-subjectNumber  = 7                              # subject number
+subjectNumber  = 25                           # subject number
 
 if hdr.fSample == 100:                          # debug case
     nChans          = 4
     conditionType   = conditionType + 'MOCK_'
-
+    capFile         = None
+    # hdf = 250
 # storage file
-fileCalibration = dataDir + conditionType + str(subjectNumber) + '.hdf5'
+fileCalibration     = dataDir + conditionType + str(subjectNumber) + '.hdf5'
+fileTest            = dataDir + 'test' + str(subjectNumber) + '.p'
 # BUFFER PARAMETERS
-trlen_ms       = 600
+trialLenIM          = 1000 # msec
+trialLenERN         = 600  # msec
+
+
+ # trial length per condition
+trialLengthmapping = {'feedback': trialLenERN,
+                     'target': trialLenIM}
 
 # event.type, event.value to watch for
 calibrationCatchEvents = [\
@@ -44,7 +50,12 @@ calibrationCatchEvents = [\
 
 wn = np.array([0, 40]) / hdr.fSample
 b, a = signal.butter(2, wn, btype = 'bandpass')
+# nChans = hdr.nChannels
+dt =  1 / hdr.fSample
 
+
+nPointsERN      =  int(trialLenERN /(1e3) * hdr.fSample) # number of points per epoch IM
+nPointsIM       =  int(trialLenIM / (1e3) * hdr.fSample) # number of points per epoch ERN
 
 print("Waiting for start event.")
 run            = True
@@ -52,7 +63,7 @@ while run:
     e = bufhelp.waitforevent('start', 1000, 0)
 
     if e is not None:
-        # print('Found event')calibration
+        # print('dataFound event')calibration
         if e.value == "calibration":
             print("Calibration phase")
 
@@ -60,146 +71,178 @@ while run:
             # catch events
             data, events, stopevents = bufhelp.gatherdata(\
                                         calibrationCatchEvents, \
-                                        trlen_ms, ("calibration", "end"), \
+                                        trialLengthmapping, ("calibration", "end"), \
                                         milliseconds=True, verbose = False)
+            ev                       = np.array([(event.type, event.value) for event in events])
 
-            # convert to arrays and save to disk
-            data         = np.array(data) # cut off the redundant channels
-            data         = data[:, :, :nChans]
-            dt           = special_dtype(vlen=bytes)
-            ev           = np.array([(event.type, event.value) for event in events])
-            # uniqueEvents = np.unique(ev[:,0])
+            # separate the trial types
+            dataIM    = []
+            dataERN   = []
+            eventsIM  = []
+            eventsERN = [] #  init store lists
+            for i, j in zip(data, ev):
+                print(i.shape, j.shape)
+                if i.shape[0] == nPointsIM:
+                    dataIM.append(i)
+                    eventsIM.append(j)
+                else:
+                    dataERN.append(i)
+                    eventsERN.append(j)
 
-            # specify [lowerBound, upperBound] bandpass filter range
-            print('Data shape ', data.shape)
-            filterBand = [0, 40]
-            procData = preproc.stdPreproc(data, filterBand, hdr)
+            eventsIM    = np.array(eventsIM)
+            eventsERN   = np.array(eventsERN)
+
+            dataIM      = np.array(dataIM)
+            dataERN     = np.array(dataERN)
+
+            print(dataIM.shape, dataERN.shape)
+            dataIM      = dataIM[..., :nChans]
+            dataERN     = dataERN[...,:nChans]
+            # data                    = np.array(data)
+            eventDataType           = special_dtype(vlen=bytes)                                 # for storage in hdf5
+             # np array of events
+
+
+            print('IM data shape', dataIM.shape)
+            print('ERN data shape', dataERN.shape)
+            filterBand = np.array([0, 40])                                                     # filter range
+            procDataIM, chanSelectIM   = preproc.stdPreproc(dataIM, filterBand, hdr,  cap  = capFile)
+            procDataERN, chanSelectERN = preproc.stdPreproc(dataERN, filterBand, hdr, cap = capFile)
             with File(fileCalibration, 'w') as f:
-                f.create_dataset('rawData',       data = data)
-                f.create_dataset('events',        data = ev, dtype = dt)
-                f.create_dataset('processedData', data = procData)
-                f.create_dataset('cap',           data = capFile)
-                # f.create_dataset('mapping',       data = mapping)
+                # store IM condition
+                f.create_dataset('rawData/IM',       data = dataIM)
+                f.create_dataset('procData/IM',      data = procDataIM)
+                f.create_dataset('events/IM',        data = eventsIM,  dtype = eventDataType)
+                f.create_dataset('chanSelector/IM',     data = chanSelectIM)
+
+                # store ERN condition
+                f.create_dataset('rawData/ERN',      data = dataERN)
+                f.create_dataset('procData/ERN',     data = procDataERN)
+                f.create_dataset('events/ERN',       data = eventsERN, dtype = eventDataType)
+                f.create_dataset('chanSelector/ERN', data = chanSelectERN)
+
+                if capFile != None:
+                    f.create_dataset('cap',          data = capFile)
             print("End calibration phase")
 
         # load data from disk; train classifier
         elif e.value == "train":
+
             print('Loading from ' + fileCalibration)
             print("Training classifier")
             with File(fileCalibration, 'r') as f:
                 for i in f: print(i)          # file content : debug info
-                events       = f['events'].value
-                procData     = f['rawData'].value
-                procData = preproc.stdPreproc(procData, [0,40], hdr)
-                # mapping  = f['mapping'].value
+                #events
+                eventsIM      = f['events/IM'].value
+                eventsERN     = f['events/ERN'].value
 
-            modelIM, modelERN = classification.SVM(procData, events)
+                # pre-processed data
+                procDataIM   = f['procData/IM'].value
+                procDataERN  = f['procData/ERN'].value
+
+                # boolean for removed channels
+                chanSelectIM = f['chanSelector/IM'].value
+                chanSelectERN = f['chanSelector/ERN'].value
+	    print(procDataIM.shape)
+            modelIM  = classification.SVM(procDataIM, eventsIM)
+            modelERN = classification.SVM(procDataERN, eventsERN)
+
             bufhelp.sendEvent("training", "done")
-            print('Training done')
-        # interface with the game
-        elif e.value == "test":
-            print("Feedback phase")
-            # nChans = hdr.nChannels
-            dt =  1 / hdr.fSample
 
+        # interface with the game
+        elif e.value == "test1" or e.value == "test2":
+            print("Feedback phase")
+            # idx,
+
+            #e = ftc.getEvents()[-1]
+            # print(e[-1])
+            useERN = False
+            try:
+                print(e.value, e.type)
+                if e.value == "test2":
+                    useERN = True
+            except:
+                continue
+            print('Use ERN?', useERN)
             # PARAMETERS
             plotTime = 3
-            nPoints  = int((trlen_ms/1e3) / dt)
-            print(hdr.fSample)
-            # timeSec = linspace(-nPoints, 0, nPoints)
-            # print(nPoints)
+            # nPointsTrial  = int((trialLenIM/1e3) / dt)
+
+
+            nTimePointsIM       =  int(1 / dt)
+            nSamplesIM          =  int(nTimePointsIM * plotTime *  dt)
+
+            nPointsIM           = nSamplesIM * nTimePointsIM
+            # print(nPointsIM, nSamplesIM, nTimePointsIM)
+            weightIM            = np.exp(- np.linspace(nSamplesIM, 0, nSamplesIM))
+
+            saveData = {'IM data' : [], 'IM pred': [], 'ERN data': [], 'ERN pred': []}
+            print('Sampling rate', hdr.fSample)
+            # timeSec = linspace(-nPointsIM, 0, nPointsIM)
+            # print(nPointsIM)
 
             keep = True
-            i = 0
-            j = 0
-            k = 0
-            bufferStorage = zeros((nPoints, nChans))
+            # bufferStorage = zeros((nPointsIM, len(chanSelectIM)))
             testData = []
-            
+
             while keep:
-                # print(bufferStorage.shape, nChans)
-                # get latest samples and plot them
-                tic = t  =  time.time()
-                predsIM = []
-                predsERN = []
-                # dd = []
-                idx = ftc.getHeader().nSamples- 1
-                lastSample1 = ftc.getData((idx, idx))
-
-                # if exit event is given exit
-                event       = ftc.getEvents()[-4:] # hacky way
-                for e in event:
-                    if e.type == 'test' and e.value == 'end':
+                endSample, startEvent    = ftc.poll()                                 # get current index sample
+                startSample              = endSample - nPointsIM + 1                    # compute end sample
+                # _, stopEvent             = ftc.wait(nPointsIM, -1, timeout = nPointsIM)   # 3 sec timout
+                _, stopEvent             = ftc.wait(endSample + nPointsIM, -1, timeout = 3000)
+                events                   = ftc.getEvents((startEvent, stopEvent - 1)) # get events within frame
+                for ev in events:                                                     # check for stopping
+                    if ev.type == 'test' and ev.value == 'end':
                         keep = False
-                while abs(tic - time.time()) < plotTime:
-                    j += 1
-                    pause(0.01)
-                    idx = ftc.getHeader().nSamples  - 1
-                    lastSample2 =  ftc.getData((idx,idx))
-                    if not all(lastSample1 == lastSample2):
-                        k += 1
-                        lastSample1 = lastSample2
 
-                        bufferStorage            = np.roll(bufferStorage, -1, 0)
-                        bufferStorage[-1, :]     = lastSample1[0, :nChans]
-                        # i+= 1
-                        if  t > trlen_ms / 1e3:
-                            tmp = detrend(bufferStorage, 0, type = 'linear')
-                            # tmp = detrend(tmp, 0, type = 'constant')
-                            tmp = sklearn.preprocessing.normalize(tmp.flatten(), axis = 0)
-                            tmp = tmp.reshape(bufferStorage.shape)
-                            tmp = signal.filtfilt(b,a, tmp, method = 'gust', axis = 0)
-                            # store test data
-                            testData.append(tmp)
-                            #tmp  = bufferStorage
-                            # bufferStorage = np.array(bufferStorage.flatten(), ndmin = 2 )
-                            tmp = tmp.reshape(bufferStorage.shape[0] * bufferStorage.shape[1])[:, None]
-                            print(tmp.T.shape, tmp.reshape(1,-1).shape)
-                            print(bufferStorage.shape)
+                # the try command is here because when debugging the event viewer freezes
+                # yielding NoneType for data, which will crash; this is a workaround
+                # try:
 
-                            #print(tmp[-1])
-                            #print(tmp.shape)
-                            print(modelIM.predict(np.random.rand(2,240)))
-                            pred = modelIM.predict_proba(tmp.reshape(1,-1)) # prediction
+                bufferStorage    = ftc.getData((startSample, endSample))    # grab from buffer
+                bufferStorage    = bufferStorage[:, :nChans]
+                bufferStorage    = bufferStorage[:, chanSelectIM]
+                bufferStorage    =  bufferStorage.reshape(nSamplesIM, nTimePointsIM, bufferStorage.shape[-1])
+                bufferStorage, _ = preproc.stdPreproc(bufferStorage, [0,40], hdr, calibration = 0)
+                bufferStorage    = bufferStorage.reshape(nSamplesIM,-1)     # reshape nPointsIM x (time x channels)
+		print(bufferStorage.shape)
+                IM               = modelIM.predict_proba(abs(np.fft.fft(bufferStorage, axis = 1))**2)     # compute probability for IM
 
-                            predsIM.append([pred])
-                            pred = modelERN.predict_proba(tmp.reshape(1,-1
-                            )) # prediction
-                            assert 0
-                            predsERN.append([pred])
+                weightedIM       = ( weightIM * IM.T ).T
+                  # weigh IM
+                maxIMIdx         = np.unravel_index(np.argmax(weightedIM), weightedIM.shape)[0] # compute the max index
+                bufhelp.sendEvent('clsfr.prediction.im',  IM[maxIMIdx, :])
+                saveData['IM data'].append(bufferStorage)
+                saveData['IM pred'].append(weightedIM)
 
-                            i += 1
+                if useERN:
+                    endSample, _  = ftc.poll()
+                    startSample  =  endSample - nPointsERN + 1
+                    ftc.wait(endSample + nPointsERN - 1, -1 , timeout = 1000000)
+                    bufferStorage    = ftc.getData((startSample, endSample))
+                    bufferStorage    = bufferStorage[:, :nChans]
+                    bufferStorage    = bufferStorage[:, chanSelectERN]
 
-                        t = time.time() - tic
-                        # print(predsIM)
-                        if (len(predsIM) > 4):
-                            predsIM = np.array(predsIM).squeeze()
-                            #print(predsIM.shape)
-                            # print(predsIM[0,0])
-                            predsERN        = np.array(predsERN).squeeze()
 
-                            # weightingIM     = np.arange(start=predsIM.shape[0]+1,stop=1,step=-1)[:,None]
-                            # weightingERN    = np.arange(start=predsERN.shape[0]+1,stop=1,step=-1)[:,None]
+                    bufferStorage    = bufferStorage.reshape(1, -1)      # reshape nPointsIM x (time x channels)
 
-                            weight = np.exp(-np.linspace(3, 0, 5))[:, None].T
-                            maxIM  = np.argmax(predsIM) # max over entire matrix
-                            maxERN = np.argmax(predsERN) # max over entire matrix
-                            maxIM  = np.unravel_index(maxIM, predsIM.shape)[0] # obrain correct rows=
-                            maxERN = np.unravel_index(maxERN, predsERN.shape)[0] # obtain correct row
+                    bufferStorage, _    = preproc.stdPreproc(bufferStorage, [0,40], hdr, calibration = 0)
 
-                            # print('>', maxPredIM)
-                            bufhelp.sendEvent('clsfr.prediction.im', 1 - predsIM[maxIM[0],:])
-                            bufhelp.sendEvent('clsfr.prediction.ern',1 - predsERN[maxERN[0], :])
-                            #bufhelp.sendEvent('clsfr.prediction.im', pred)
-                            predsIM = []
-                            predsERN = []
+
+                    #print('> ', startSample)
+                    ERN              = modelERN.predict_proba(bufferStorage)    # compute probability for ERN
+
+                    # send the events!
+                    bufhelp.sendEvent('clsfr.prediction.ern', ERN[0,:])
+                    saveData['ERN data'].append(bufferStorage)
+                    saveData['ERN pred'].append(weightedIM)
+
             print('Ending test phase\n storing data...')
-            # with File(fileCalibration) as f:
-            #     testData = np.array(testData)
-            #     f.create_dataset('test', data = testData)
+            fileTest = checkOverwrite(dataDir, 'test', subjectNumber, fileType = '.p')
+            with open(fileTest,'w') as f:
+                pickle.dump(saveData, f)
 
-                        # if different sample
-                    # while 3 seconds loop
+
         elif e.value == "exit":
             run = False
         # print(e.value)

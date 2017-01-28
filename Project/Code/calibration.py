@@ -24,7 +24,7 @@ targetDuration      = 20              # target show time
 feedbackDuration    = 10              # feedback show time
 restDuration        = 15              # duration of rest
 proportionNegative  = 1/3             # proportion of negative feedback
-breakTrial          = 150              # break after x trials
+breakTrial          = 150             # break after x trials
 
 
 # connect with the buffer

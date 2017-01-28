@@ -56,7 +56,7 @@ def press(event):
         phase = 3
 
 
-#call(['gnome-terminal', '-x', 'python','signalProcessingV2.py'])
+call(['gnome-terminal', '-x', 'python','signalProcessing.py'])
 def waitForKeyPress():
     global phase
     global returncode
@@ -69,7 +69,7 @@ def waitForKeyPress():
             returncode = call(['gnome-terminal','-x', 'python','calibration.py'])
         elif phase == 2:
         	alpha = False
-        	returncode = call(['gnome-terminal', '-x', 'python','CybathlonAdapter.py'])
+        	returncode = call(['gnome-terminal', '-x', 'python','cybathlonAdapter.py'])
         elif phase == 3:
             alpha = False
             running = False
@@ -88,10 +88,13 @@ fig.canvas.mpl_connect('key_press_event', press)
 # display welcome text
 # create a figgure which is full screen in first place TODO
 text = ax.text(0, 0,\
-'Welcome to the BCI Racer interface \n Press 1 to start the calibration\n Press 2 to start the race',\
-color = 'white',\
-horizontalalignment = 'center',\
-verticalalignment = 'center')
+                 ('Welcome to the BCI Racer interface \n \n'
+                'Press 1 to start the calibration\n'
+                'Press 2 to start the race'),\
+                 color      = 'white',
+                 fontsize   = 20,\
+                 horizontalalignment = 'center',\
+                 verticalalignment = 'center')
 
 global running
 global returncode

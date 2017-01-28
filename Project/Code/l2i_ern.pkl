@@ -1,8 +1,0 @@
-(dp0
-S'positive'
-p1
-I1
-sS'negative'
-p2
-I0
-s.
