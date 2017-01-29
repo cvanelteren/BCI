@@ -29,7 +29,8 @@ def LogReg(data, events):
 
 
 
-def SVM(data, events, numCrossFold = 2, fft = 0):
+def SVM(data, events, numCrossFold = 10, fft = 0):
+    # numCrossFold = data.shape[0]-1
     uniques                =  np.unique(events[:,1])
     # weigh the class weights according to occurence
     # to obtain the class weight, first find the maximum amongst classes
@@ -38,78 +39,91 @@ def SVM(data, events, numCrossFold = 2, fft = 0):
     normalizer     = 0
 
     for idx, unique in enumerate(uniques):
+        sizeOfCond  = len(np.where(events[:, 1] == unique)[0])
         if idx == 0 :
             # perform forward sweep to find the max used for computing ratio
             for i in uniques:
-                sizeOfCond  = len(np.where(events[:, 1] == i)[0])
-                if sizeOfCond > normalizer:
-                    normalizer = sizeOfCond
-            classWeights[unique] = normalizer /  len(np.where(events[:, 1] == i)[0])
-        else:
-            classWeights[unique] = normalizer /  len(np.where(events[:, 1] == i)[0])
+                tmp = len(np.where(events[:, 1] == i)[0])
+                # print(tmp, normalizer)
+                if tmp > normalizer:
+                    normalizer = tmp
+        # set the class weights
+        print(sizeOfCond)
+        classWeights[unique] = normalizer /  sizeOfCond
+        # if unique != 'rest':
+        #     classWeights[unique] += 10
 
-    print('Class weights: \n\t : ', classWeights)
+
+    # classWeights = 'balanced'
+
     # concatenate channels x time
     # power over features
     print('Data', data.shape)
     if fft:
-        data = abs(np.fft(data.reshape(data.shape[0], -1), axis = 0))**2
+        data = abs(np.fft.fft(data.reshape(data.shape[0], -1), axis = 0))**2
     else:
         data = data.reshape(data.shape[0], -1)
+    cs  = np.linspace(.01, 10, 30)
 
     gs = sklearn.model_selection.GridSearchCV                        # init grid search object
-    parameters = {'kernel':('linear', 'sigmoid','rbf'),              # parameters grid search
-                    'C':np.linspace(.01, 3,20)}
-    # cw         = {'left hand':5, 'right hand':5, 'feet':5, 'rest':1} # class weights : deprecated!
+    parameters = {'kernel':('linear','rbf'),              # parameters grid search
+                    'C':cs}
 
-    classWeights = 'balanced'
-    model = sklearn.svm.SVC(class_weight = classWeights, probability = 1)       # probabilities are odd --> take argmin or argmax 1 - p
-    cv    = gs(model, parameters, cv = numCrossFold, verbose = 1, n_jobs = multiprocessing.cpu_count())
+
+    # classWeights = 'balanced'
+    print('Class weights: \n\t : ', classWeights)
+    model = sklearn.svm.SVC(class_weight = classWeights, probability = 1)
+    cv    = gs(model,
+               parameters,
+               cv = numCrossFold,
+               verbose = 1,
+               n_jobs = multiprocessing.cpu_count(),
+               scoring = 'recall_micro')
     cv.fit(data, events[:,1])
     model = cv.best_estimator_
-    model.fit(data, events[:,1])
-    print('--' * 50)
-    print('Best parameters', cv.best_params_)
-    print('Mean cross validation test score {0} +- {1}'.format(
-    np.mean(cv.cv_results_['mean_test_score']),
-    np.std(cv.cv_results_['std_test_score']) ))
 
+    pred = model.predict(data)
+
+
+
+    print('--' * 70)
+    print('Best parameters', cv.best_params_)
+    # print('Mean cross validation test score {0} +- {1}'.format(
+    # np.mean(cv.cv_results_['mean_test_score']),
+    # np.std(cv.cv_results_['std_test_score']) ))
+    # print(data.shape)
+    kf = sklearn.model_selection.KFold(n_splits= numCrossFold)
+    tmp = len(classWeights.keys())
+    conf = np.zeros( (tmp, tmp) )
+    accuracy = []
+    for train_index, test_index in kf.split(data):
+        XTrain, YTrain = data[train_index, ...], events[train_index, 1]
+        XTest, YTest = data[test_index, ...], events[test_index, 1]
+
+        model.fit(XTrain, YTrain)
+
+        yPred = model.predict(XTest)
+        # in case not all labels are predicted, construct the conf matrix per
+        # fold
+        tmp = zeros(conf.shape)
+        for pred, tar in zip(yPred, YTest):
+            for idx, label in enumerate(classWeights.keys()):
+                if pred == label:
+                    rower = idx
+                if tar == label:
+                    coller = idx
+            tmp[coller, rower] += 1
+        # print(sklearn.metrics.classification_report(YTest, yPred, target_names = classWeights.keys()))
+
+        conf += tmp
+        accuracy.append(sum(tmp.diagonal()) / len(YTest))
+
+    print('Confusion matrix : \n', conf)
+    # print('Confusion matrix : \n', sklearn.metrics.confusion_matrix(events[:,1], pred))
+    print('Mean accuracy {0} +-{1}'.format(np.mean(accuracy), np.std(accuracy)))
+    model.fit(data, events[:,1])
     return model
-    # # obtain the optimal model
-    # IMGridSearch = gs(modelIM, parameters, cv = numCrossFold, verbose = 1)
-    # IMGridSearch.fit(*datasetIM)
-    # modelIM = IMGridSearch.best_estimator_                                     # optimal model action
-    # # print('Mean test validation score\n', c.cv_results_['mean_test_score'])
-    #
-    #
-    # print('Training ERN classifier')
-    # # slightly edit the model above for ERN:
-    # modelERN = sklearn.svm.SVC(class_weight = classWeightingERN,
-    #                         probability = True)
-    #
-    # ERNGridSearch                       = gs(modelERN, parameters, cv = numCrossFold, verbose = 1)
-    # ERNGridSearch.fit(*datasetERN)
-    #
-    # modelERN                            = ERNGridSearch.best_estimator_
-    # print('*' * 32)
-    # print('Best Parameters for IM : \n\t', IMGridSearch.best_params_)
-    # print('Mean test score of CV {0} +- {1}'.format(
-    #                                         np.mean(IMGridSearch.cv_results_['mean_test_score']),
-    #                                         np.std(IMGridSearch.cv_results_['std_test_score']) )
-    #                                         )
-    # print('*' * 32)
-    # print('Best Parameters for ERN : \n\t', ERNGridSearch.best_params_)
-    # print('Mean test score of CV {0} +- {1}'.format(
-    #                                         np.mean(ERNGridSearch.cv_results_['mean_test_score']),
-    #                                         np.std(ERNGridSearch.cv_results_['std_test_score']))
-    #                                         )
-    # print('*' * 32)
-    # print('Done with training')
-    #
-    # # fit the models (ready for use)
-    # modelIM.fit(*datasetIM)
-    # modelERN.fit(*datasetERN)
-    # return modelIM, modelERN
+
 
 
 
@@ -120,7 +134,7 @@ if __name__ == '__main__':
     from h5py import File
     from preproc import  stdPreproc
     import sklearn, sklearn.preprocessing
-    with File('../Data/calibration_subject_MOCK_22.hdf5') as f:
+    with File('../Data/calibration_subject_MOCK_3.hdf5') as f:
         for i in f:
             print(i)
 
@@ -136,10 +150,10 @@ if __name__ == '__main__':
         # events = f['events'].value
     # kcrossVal(procData, events)
     import sklearn
-    data = [procDataIM, procDataERN]
-    events = [eventsIM, eventsERN]
-    print(procDataERN.shape)
+    data    = [procDataIM, procDataERN]
+    events  = [eventsIM, eventsERN]
+
     # print(data)
 
-    model = SVM(procDataIM, eventsIM)
+    model = SVM(procDataIM, eventsIM, fft = 1)
     model = SVM(procDataERN, eventsERN)

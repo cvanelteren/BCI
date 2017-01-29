@@ -24,17 +24,17 @@ targetDuration      = 20              # target show time
 feedbackDuration    = 10              # feedback show time
 restDuration        = 15              # duration of rest
 proportionNegative  = 1/3             # proportion of negative feedback
-breakTrial          = 150             # break after x trials
+breakTrial          = 129              # break after x trials
 
 
 # connect with the buffer
 import bufhelp
 fct, hdr = bufhelp.connect()
-
+bufhelp.sendEvent('start', 'calibration')           # communicate with buffer
 
 close('all')
 
-circleLabels = ['feet', 'right hand', 'left hand']
+
 
 # open a figure remove the toolbar
 fig, ax     = subplots(1, 1, facecolor = 'black')
@@ -58,6 +58,8 @@ try:
 except:
     fig.canvas.toolbar = None                            # alt remove toolbar
 
+# set up 4 labels
+circleLabels = ['feet', 'right hand', 'left hand']
 r       = 10                    # radius
 nCircle = len(circleLabels) + 1
 
@@ -95,7 +97,6 @@ def waitForSpacePress():
             alpha = False
             text.set_visible(0)
         pause(.1)
-
 
 
 # remove middle circle
@@ -167,23 +168,23 @@ for i in range(nCircle):
 
 
 # display break text
-# create a figure which is full screen in first place TODO
-
-
 textBreak           = ax.text(0, 0,'',\
 color               = 'white',\
 horizontalalignment = 'center',\
 verticalalignment   = 'center', \
 fontsize            = 20)
 
-bufhelp.sendEvent('start', 'calibration')
-for idx, target in enumerate(targets):
-    # every break trials; take a break wait for user input
-    if (idx % breakTrial == 0) and idx > 0:
+# EXPERIMENT RUN:
+for idx, target in enumerate(targets):                  # for every stimulus
+    if (idx % breakTrial == 0) and idx > 0:             # check for break trial
+
+        # if breaktrial don't show circles
         for c, text in zip(circles, texts):
             c.set_visible(False)
             text.set_visible(False)
         fig.canvas.draw()
+
+        # display break text
         text_str = 'Take a short break\n This was trial ' + \
                     str(idx) + ' of ' + str(len(targets)) + \
                     '\n Press space to start'
@@ -191,6 +192,7 @@ for idx, target in enumerate(targets):
         textBreak.set_visible(True)             # show break text
         waitForSpacePress()                     # wait for user input
         textBreak.set_visible(False)            # remove break text
+        # turn circles back on
         for c, text in zip(circles, texts):
             c.set_visible(True)
             text.set_visible(True)
@@ -252,6 +254,6 @@ bufhelp.sendEvent('calibration', 'end')
 
 # train classifier
 pause(1)
-bufhelp.sendEvent('start', 'train')
+bufhelp.sendEvent('start', 'train')                 # immediately train the classifier
 # show()
 close()

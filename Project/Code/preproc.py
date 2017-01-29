@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 import numpy as np
-import scipy
+import scipy, scipy.signal
 import sklearn
 from pylab import *
 from h5py import File

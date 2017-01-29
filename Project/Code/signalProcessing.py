@@ -20,7 +20,7 @@ nChans      = len(capFile)  # mobita outputs 37, redundant channels remove them
 # SET THE SUBJECT NUMBER
 dataDir        = '../Data/'                     # storage of directory
 conditionType  = 'calibration_subject_'         # calibration file
-subjectNumber  = 25                           # subject number
+subjectNumber  = 33                           # subject number
 
 if hdr.fSample == 100:                          # debug case
     nChans          = 4
@@ -81,7 +81,7 @@ while run:
             eventsIM  = []
             eventsERN = [] #  init store lists
             for i, j in zip(data, ev):
-                print(i.shape, j.shape)
+                # print(i.shape, j.shape)
                 if i.shape[0] == nPointsIM:
                     dataIM.append(i)
                     eventsIM.append(j)
@@ -95,7 +95,7 @@ while run:
             dataIM      = np.array(dataIM)
             dataERN     = np.array(dataERN)
 
-            print(dataIM.shape, dataERN.shape)
+            # print(dataIM.shape, dataERN.shape)
             dataIM      = dataIM[..., :nChans]
             dataERN     = dataERN[...,:nChans]
             # data                    = np.array(data)
@@ -121,8 +121,11 @@ while run:
                 f.create_dataset('events/ERN',       data = eventsERN, dtype = eventDataType)
                 f.create_dataset('chanSelector/ERN', data = chanSelectERN)
 
+                # store cap file
                 if capFile != None:
                     f.create_dataset('cap',          data = capFile)
+                # store sampling rate
+                f.create_data_set('fSample', data = hdr.fSample)
             print("End calibration phase")
 
         # load data from disk; train classifier
@@ -144,7 +147,9 @@ while run:
                 chanSelectIM = f['chanSelector/IM'].value
                 chanSelectERN = f['chanSelector/ERN'].value
 	    print(procDataIM.shape)
-            modelIM  = classification.SVM(procDataIM, eventsIM)
+            print('Training IM classifier')
+            modelIM  = classification.SVM(procDataIM, eventsIM, fft = 1)  # feed power to clsfr
+            print('Training ERN classifier')
             modelERN = classification.SVM(procDataERN, eventsERN)
 
             bufhelp.sendEvent("training", "done")

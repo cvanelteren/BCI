@@ -1,3 +1,4 @@
+from __future__ import print_function
 bufferpath = "../../python/signalProc"
 
 import os, sys, random, math, time, socket, struct
@@ -206,6 +207,7 @@ def max2(numbers):
 #Connect to BrainRacers
 br_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
 
+
 #Connect to Buffer
 (ftc,hdr) = bufhelp.connect(buffer_hostname,buffer_port)
 print("Connected to " + buffer_hostname + ":" + str(buffer_port))
@@ -223,7 +225,6 @@ running = True
 while running:
     global running
     events = bufhelp.buffer_newevents()
-    nChans = 10
     for evt in events:
     	# print( str(evt.sample) + ": " + str(evt) )
     	if evt.type == 'clsfr.prediction.im' :
