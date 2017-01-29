@@ -42,7 +42,9 @@ ax.set_ylim([-rr,rr])
 
 def press(event):
     '''
-    looks for key press events
+    Connects with matplotlib figure and check for key press
+    This is used for changing from calibration to test phase, see text
+    Input : keypress event from figure
     '''
     # get the global start variable
     global phase
@@ -97,13 +99,13 @@ def waitForKeyPress():
     phase = 0
     alpha = True
     while alpha:
-        if phase == 1:
+        if phase == 1:          # start calibration
             alpha = False
             startInTerminal('calibration.py')
-        elif phase == 2:
+        elif phase == 2:        # start brain runner interface
         	alpha = False
         	startInTerminal('cybathlonAdapter.py')
-        elif phase == 3:
+        elif phase == 3:        # close the mainframe
             alpha = False
             running = False
             returncode = 42
@@ -132,6 +134,5 @@ text = ax.text(0, 0,\
 global running
 global returncode
 running = True
-#call(['python', 'signalProcessing.py'])
 while running:
     waitForKeyPress()

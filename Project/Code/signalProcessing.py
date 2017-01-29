@@ -32,7 +32,7 @@ fileCalibration     = dataDir + conditionType + str(subjectNumber) + '.hdf5'
 fileTest            = dataDir + 'test' + str(subjectNumber) + '.p'
 # BUFFER PARAMETERS
 trialLenIM          = 1000 # msec
-trialLenERN         = 600  # msec
+trialLenERN         = 800  # msec
 
 
  # trial length per condition

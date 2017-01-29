@@ -2,10 +2,8 @@ from __future__ import print_function, division
 import numpy as np
 
 import sklearn
-import sklearn.svm, sklearn.linear_model
-from sklearn.linear_model import LogisticRegression
-from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
-from sklearn.preprocessing import MultiLabelBinarizer
+import sklearn.svm
+
 from h5py import File
 import pickle
 from pylab import *
@@ -13,7 +11,27 @@ from preproc import stdPreproc
 import multiprocessing
 
 
-def SVM(data, events, numCrossFold = 10, fft = 0):
+def SVM(data, events, numCrossFold = 10, fft = 0, cs  = np.linspace(.01, 10, 30)):
+    '''
+    Returns the optimal SVM for the input data using k-fold cross validation.
+    The SVM is weighted according to the the size of the class labels in events
+    Inputs:
+          - data : trials x time x channels
+
+          - events : type x class types
+
+          - numCrossFold : number of cross validation
+
+          - fft  : used for the imagined movement condition, i.e. classifier is
+          trained on the power of the data
+
+          - cs   : input for the grid search, C controls the margin of error for the fitted
+          lines of the SVM
+
+    This function will also output performance of the optimal method found using grid search
+    returns trained SVM on the data
+    '''
+
     # numCrossFold = data.shape[0]-1
     uniques                =  np.unique(events[:,1])
     # weigh the class weights according to occurence
@@ -42,10 +60,10 @@ def SVM(data, events, numCrossFold = 10, fft = 0):
         data = abs(np.fft.fft(data.reshape(data.shape[0], -1), axis = 0))**2
     else:
         data = data.reshape(data.shape[0], -1)
-    cs  = np.linspace(.01, 10, 30)
+
 
     gs = sklearn.model_selection.GridSearchCV                        # init grid search object
-    parameters = {'kernel':('linear','sigmoid','rbf'),              # parameters grid search
+    parameters = {'kernel':('linear','sigmoid','rbf'),               # parameters grid search
                     'C':cs}
 
 
@@ -77,12 +95,12 @@ def SVM(data, events, numCrossFold = 10, fft = 0):
     accuracy = []
     # for all kfolds compute the confusion matrix
     for train_index, test_index in kf.split(data):
-        XTrain, YTrain = data[train_index, ...], events[train_index, 1]
-        XTest, YTest = data[test_index, ...], events[test_index, 1]
+        XTrain, YTrain = data[train_index, ...], events[train_index, 1] # define train set
+        XTest, YTest = data[test_index, ...], events[test_index, 1]     # define test set
 
-        model.fit(XTrain, YTrain)
+        model.fit(XTrain, YTrain)                                       # fit the model
 
-        yPred = model.predict(XTest)
+        yPred = model.predict(XTest)                                    # predict on test set
         # in case not all labels are predicted, construct the conf matrix per
         # fold
         tmp = zeros(conf.shape)
@@ -111,34 +129,25 @@ def SVM(data, events, numCrossFold = 10, fft = 0):
 
 
 if __name__ == '__main__':
+    '''
+    If this is run separately, it will train classifier on input data
+    Please run this from a terminal
+    '''
+
     from h5py import File
     from preproc import  stdPreproc
     import sklearn, sklearn.preprocessing
-    import os
-    while True:
-        subjectNumber = raw_input('Please enter a subject number')
-        file = '../Data/calibration_subject_{0}.hdf'.format(subjectNumber)
-        yes = os.path.isfile(file)
-        if not yes:
-            break
-        else:
-            print('Error! Subject number does not exist')
-
-    with File('../Data/calibration_subject_MOCK_3.hdf5') as f:
+    from systemHelper import enterSubjectNumber
+    # file = enterSubjectNumber(10412)
+    file = '../Data/calibration_subject_MOCK_3.hdf5' # uncomment for mockdata
+    with File(file) as f:
+        print('File contents:\n\t')
         for i in f:
             print(i)
-
-
         procDataIM =  f['procData/IM'].value
         procDataERN = f['procData/ERN'].value
         eventsIM    = f['events/IM'].value
         eventsERN    = f['events/ERN'].value
-        # # assert 0
-        # rawData = f['rawData'].value
-        # procData = f['processedData'].value
-        # cap = f['cap'].value
-        # events = f['events'].value
-    # kcrossVal(procData, events)
     import sklearn
     data    = [procDataIM, procDataERN]
     events  = [eventsIM, eventsERN]
