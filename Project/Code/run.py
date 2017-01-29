@@ -2,7 +2,7 @@ from __future__ import division
 import matplotlib
 matplotlib.use('TkAgg')
 from pylab import *
-from subprocess import call
+from subprocess import call, CREATE_NEW_CONSOLE
 import sys
 # sys.path.append('Project/Code/')
 
@@ -12,7 +12,7 @@ Note to reader; there are some random numbers in this script; these are
 mainly related to visual and thus can be tweaked to whatever we like
 '''
 
-
+print('Installing necessary modules...')
 call(['python', 'moduleInstallers.py'])                 # check if all packages are installed
 
 close('all')
@@ -55,9 +55,41 @@ def press(event):
     elif event.key == 'escape':
         phase = 3
 
+def startInTerminal(file):
+    '''
+    Uses subprocess.call to open a terminal an run a python script.
+    Checks for possible versions depending on OS being run
+    '''
+    try:
+        call(['powershell', 'python', file], creationflags = CREATE_NEW_CONSOLE) #tested
+    except:
+        print('The OS is not windows, trying linux')
+    try:
+        call(['gnome-terminal','-x', 'python', file])                       #tested
+    except:
+        print('Gnome-terminal not detected, trying xterm')
+    try:
+        call(['xterm', '-e', file])                                         # untested
+    except:
+        print('xterm note detected, trying MAC terminal')
+    try:
+        call(['open', '-W', '-a', 'Terminal.app', 'python', '--args', file]) #untested
+    except:
+        print('Please check the details of the script, and edit the terminal you are using')
+        raise UnknownOS
 
-call(['gnome-terminal', '-x', 'python','signalProcessing.py'])
+
+
+startInTerminal('signalProcessing.py')
 def waitForKeyPress():
+    '''
+    Waits for a selection key
+    Inputs:
+            pressing 1 will initate calibration.py
+            pressing 2 will initate cybathalonAdapter.py which will allow for playing the brainRunner game
+            please note that running 2 will require running 1,
+            or providing signalProcesing with a valid calibration file, see manual for more information
+    '''
     global phase
     global returncode
     global running
@@ -66,10 +98,10 @@ def waitForKeyPress():
     while alpha:
         if phase == 1:
             alpha = False
-            returncode = call(['gnome-terminal','-x', 'python','calibration.py'])
+            startInTerminal('calibration.py')
         elif phase == 2:
         	alpha = False
-        	returncode = call(['gnome-terminal', '-x', 'python','cybathlonAdapter.py'])
+        	startInTerminal('cybathlonAdapter.py')
         elif phase == 3:
             alpha = False
             running = False
