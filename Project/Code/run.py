@@ -2,7 +2,8 @@ from __future__ import division
 import matplotlib
 matplotlib.use('TkAgg')
 from pylab import *
-from subprocess import call, CREATE_NEW_CONSOLE
+from subprocess import call
+import subprocess
 import sys
 # sys.path.append('Project/Code/')
 
@@ -61,7 +62,7 @@ def startInTerminal(file):
     Checks for possible versions depending on OS being run
     '''
     try:
-        call(['powershell', 'python', file], creationflags = CREATE_NEW_CONSOLE) #tested
+        call(['powershell', 'python', file], creationflags = subprocess.CREATE_NEW_CONSOLE) #tested
     except:
         print('The OS is not windows, trying linux')
     try:
@@ -73,7 +74,7 @@ def startInTerminal(file):
     except:
         print('xterm note detected, trying MAC terminal')
     try:
-        call(['open', '-W', '-a', 'Terminal.app', 'python', '--args', file]) #untested
+        call(['open', '-W', '-a', 'Terminal.app', 'python', file])          # tested
     except:
         print('Please check the details of the script, and edit the terminal you are using')
         raise UnknownOS

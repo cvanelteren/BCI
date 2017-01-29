@@ -114,6 +114,16 @@ if __name__ == '__main__':
     from h5py import File
     from preproc import  stdPreproc
     import sklearn, sklearn.preprocessing
+    import os
+    while True:
+        subjectNumber = raw_input('Please enter a subject number')
+        file = '../Data/calibration_subject_{0}.hdf'.format(subjectNumber)
+        yes = os.path.isfile(file)
+        if not yes:
+            break
+        else:
+            print('Error! Subject number does not exist')
+
     with File('../Data/calibration_subject_MOCK_3.hdf5') as f:
         for i in f:
             print(i)
