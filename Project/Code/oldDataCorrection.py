@@ -26,10 +26,10 @@ eventsIM = ev['target']
 eventsERN = ev['feedback']
 dataERN = data['feedback']
 
-procDataIM, _  = preproc.stdPreproc(dataIM, [0,30], 250)
-procDataERN, _ = preproc.stdPreproc(dataERN,[0,30], 250)
+procDataIM,  _  = preproc.stdPreproc(dataIM, [0,30], 250)
+procDataERN, _  = preproc.stdPreproc(dataERN,[0,30], 250)
 print(procDataIM.shape, eventsIM.shape)
-
+print(procDataERN.shape)
 # visualize.plotERP(procDataIM, eventsIM, cap, fSample = 250)
 classification.SVM(procDataIM, eventsIM, fft = 1)
 classification.SVM(procDataERN[:, :120,:], eventsERN, fft = 0)

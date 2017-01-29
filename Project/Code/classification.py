@@ -48,13 +48,8 @@ def SVM(data, events, numCrossFold = 10, fft = 0):
                 if tmp > normalizer:
                     normalizer = tmp
         # set the class weights
-        print(sizeOfCond)
         classWeights[unique] = normalizer /  sizeOfCond
-        # if unique != 'rest':
-        #     classWeights[unique] += 10
 
-
-    # classWeights = 'balanced'
 
     # concatenate channels x time
     # power over features
@@ -88,14 +83,15 @@ def SVM(data, events, numCrossFold = 10, fft = 0):
 
     print('--' * 70)
     print('Best parameters', cv.best_params_)
-    # print('Mean cross validation test score {0} +- {1}'.format(
-    # np.mean(cv.cv_results_['mean_test_score']),
-    # np.std(cv.cv_results_['std_test_score']) ))
-    # print(data.shape)
+
+    # get the model accuracy for the optimal model defined above
     kf = sklearn.model_selection.KFold(n_splits= numCrossFold)
+
+    # define the confusion matrix
     tmp = len(classWeights.keys())
     conf = np.zeros( (tmp, tmp) )
     accuracy = []
+    # for all kfolds compute the confusion matrix
     for train_index, test_index in kf.split(data):
         XTrain, YTrain = data[train_index, ...], events[train_index, 1]
         XTest, YTest = data[test_index, ...], events[test_index, 1]
