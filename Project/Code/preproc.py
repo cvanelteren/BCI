@@ -71,8 +71,11 @@ def butterFilter(data, band, N = 2, hdr = 100, dim = 1, filter_type = 'lowpass')
     if len(band) == 2:
         filter_type = 'bandpass'
 
+    Notch = np.array([49,51]) / fs
+    bb,aa = scipy.signal.butter(N = N, Wn = Notch, btype = 'bandstop')
     b, a = scipy.signal.butter(N = N, Wn = band, btype = filter_type)
-    fdata = scipy.signal.filtfilt(b,a, data, method = 'gust', axis = dim)
+    fdata = scipy.signal.filtfilt(bb,aa, data, method ='gust', axis = dim)
+    fdata = scipy.signal.filtfilt(b,a, fdata, method = 'gust', axis = dim)
     return fdata
 
 

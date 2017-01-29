@@ -32,7 +32,7 @@ def plotERP(data, events, cap, fSample = 100):
         idx       = np.where(events[:, 1] == unique)[0] # get rows
         plotData  = np.mean(data[idx,...], 0 )
         for idx, ax in enumerate(axes.flatten()):
-            print(plotData.shape, time.shape)
+            # print(plotData.shape, time.shape)
             try:
                 ax.plot(time, plotData[..., idx].T, label = unique)
                 ax.legend()

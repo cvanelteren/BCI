@@ -11,22 +11,6 @@ import pickle
 from pylab import *
 from preproc import stdPreproc
 import multiprocessing
-def stupidFct():
-    return 42
-
-def trainClassifier(file, fSample):
-    erpTarget, erpStimulus, cat, labels = binarizeData(file, fSample)
-    model = LogReg(cat, labels)
-    return model
-
-
-def LogReg(data, events):
-    lr = LogisticRegression()
-    lr.fit(data, events)
-    return lr
-
-
-
 
 
 def SVM(data, events, numCrossFold = 10, fft = 0):
@@ -61,7 +45,7 @@ def SVM(data, events, numCrossFold = 10, fft = 0):
     cs  = np.linspace(.01, 10, 30)
 
     gs = sklearn.model_selection.GridSearchCV                        # init grid search object
-    parameters = {'kernel':('linear','rbf'),              # parameters grid search
+    parameters = {'kernel':('linear','sigmoid','rbf'),              # parameters grid search
                     'C':cs}
 
 

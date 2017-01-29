@@ -20,7 +20,7 @@ nChans      = len(capFile)  # mobita outputs 37, redundant channels remove them
 # SET THE SUBJECT NUMBER
 dataDir        = '../Data/'                     # storage of directory
 conditionType  = 'calibration_subject_'         # calibration file
-subjectNumber  = 33                           # subject number
+subjectNumber  = 8                           # subject number
 
 if hdr.fSample == 100:                          # debug case
     nChans          = 4
@@ -125,7 +125,7 @@ while run:
                 if capFile != None:
                     f.create_dataset('cap',          data = capFile)
                 # store sampling rate
-                f.create_data_set('fSample', data = hdr.fSample)
+                f.create_dataset('fSample', data = hdr.fSample)
             print("End calibration phase")
 
         # load data from disk; train classifier
@@ -146,7 +146,7 @@ while run:
                 # boolean for removed channels
                 chanSelectIM = f['chanSelector/IM'].value
                 chanSelectERN = f['chanSelector/ERN'].value
-	    print(procDataIM.shape)
+	    # print(procDataIM.shape)
             print('Training IM classifier')
             modelIM  = classification.SVM(procDataIM, eventsIM, fft = 1)  # feed power to clsfr
             print('Training ERN classifier')
@@ -210,13 +210,13 @@ while run:
                 bufferStorage    =  bufferStorage.reshape(nSamplesIM, nTimePointsIM, bufferStorage.shape[-1])
                 bufferStorage, _ = preproc.stdPreproc(bufferStorage, [0,40], hdr, calibration = 0)
                 bufferStorage    = bufferStorage.reshape(nSamplesIM,-1)     # reshape nPointsIM x (time x channels)
-		print(bufferStorage.shape)
+		# print(bufferStorage.shape)
                 IM               = modelIM.predict_proba(abs(np.fft.fft(bufferStorage, axis = 1))**2)     # compute probability for IM
 
                 weightedIM       = ( weightIM * IM.T ).T
                   # weigh IM
                 maxIMIdx         = np.unravel_index(np.argmax(weightedIM), weightedIM.shape)[0] # compute the max index
-                bufhelp.sendEvent('clsfr.prediction.im',  IM[maxIMIdx, :])
+                bufhelp.sendEvent('clsfr.prediction.im',  1 - IM[maxIMIdx, :])
                 saveData['IM data'].append(bufferStorage)
                 saveData['IM pred'].append(weightedIM)
 
@@ -237,8 +237,8 @@ while run:
                     #print('> ', startSample)
                     ERN              = modelERN.predict_proba(bufferStorage)    # compute probability for ERN
 
-                    # send the events!
-                    bufhelp.sendEvent('clsfr.prediction.ern', ERN[0,:])
+                    # send the events!fpr
+                    bufhelp.sendEvent('clsfr.prediction.ern', 1 - ERN[0,:])
                     saveData['ERN data'].append(bufferStorage)
                     saveData['ERN pred'].append(weightedIM)
 
