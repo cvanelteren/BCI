@@ -1,14 +1,14 @@
-from __future__ import print_function, division
+from    __future__  import print_function, division
+from    h5py        import File
+from    visualize   import plotConfusionMatrix
+from    preproc     import stdPreproc
+from    pylab       import *
+
 import numpy as np
-
 import sklearn
-import sklearn.svm
+import sklearn.svm # for some reason it needs to be imported like this
+import pickle, multiprocessing
 
-from h5py import File
-import pickle
-from pylab import *
-from preproc import stdPreproc
-import multiprocessing
 
 
 def SVM(data, events, numCrossFold = 10, fft = 0, cs  = np.linspace(.01, 10, 30)):
@@ -117,6 +117,7 @@ def SVM(data, events, numCrossFold = 10, fft = 0, cs  = np.linspace(.01, 10, 30)
         accuracy.append(sum(tmp.diagonal()) / len(YTest))
 
     print('Confusion matrix : \n', conf)
+    plotConfusionMatrix(conf, classWeights.keys())
     # print('Confusion matrix : \n', sklearn.metrics.confusion_matrix(events[:,1], pred))
     print('Mean accuracy {0} +-{1}'.format(np.mean(accuracy), np.std(accuracy)))
     model.fit(data, events[:,1])

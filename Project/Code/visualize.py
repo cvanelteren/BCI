@@ -2,9 +2,43 @@ from __future__ import print_function, division
 
 from pylab import *
 import numpy as np
-import scipy, scipy.signal
+import scipy, scipy.signal, itertools
 
+def plotConfusionMatrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    fig, ax = subplots()
+    im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
+    ax.set_title(title)
+    colorbar(im, ax = ax)
+    tick_marks = np.arange(len(classes))
+    xticks(tick_marks, classes, rotation=45)
+    yticks(tick_marks, classes)
 
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        text(j, i, cm[i, j],
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    tight_layout()
+    ylabel('True label')
+    xlabel('Predicted label')
+    show()
+    
 def plotERP(data, events, cap, fSample = 100):
     '''
     Plots the ERP of the data per condition as indicated in events
