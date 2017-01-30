@@ -122,31 +122,36 @@ def stdPreproc(data, band,  hdr, cap = None, calibration = 1):
     data       = scipy.signal.detrend(data, axis = 1)
 
     # bad channel removal
-    power      = np.sum(abs(np.fft.fft(data, axis = 1))**2, 0)
+    # power      = np.sum(abs(np.fft.fft(data, axis = 1))**2, 0)
     # rData      = data.reshape(-1, data.shape[-1])       # keep channels cat epochs + time
     # power      = abs(np.fft.fft(rData, axis = 0))**2    # total power(?)
 
-    meanPower  = np.mean(power, axis = 0)               # mean channel power
-    stdPower   = np.std(power,  axis = 0)               # variance channel power
+    # meanPower  = np.mean(power, axis = 0)               # mean channel power
+    # stdPower   = np.std(power,  axis = 0)               # variance channel power
+    meanData = np.mean(data)    # global mean
+    stdData  = np.std(data)     # global std
 
     if calibration :
         # remove channels with high power
         #_, remove  = np.where(power > meanPower + 3 * stdPower)
         # print(power, meanPower, remove, power.shape)
         #uniques    = np.unique(remove)
-        channels   = np.ones(data.shape[-1], dtype = bool)
+
+        _,_,badChannels         = np.where(
+                                    np.logical_or(
+                                    data > meanData + 3 * stdData,
+                                    data < meanData - 3 * stdData))
+        badChannels             = np.unique(badChannels)
+        channels                = np.ones(data.shape[-1], dtype = bool)
+        channels[badChannels] = 0
         #channels[uniques] = 0
         #data       = data [..., channels]
     else:
         channels = None
-        # print((channels-1)*-1, channels)
-        # print('Removing channels', remove)
 
     # feature normalization
-    tmp        = data.reshape(-1)
-    tmp        = (tmp - np.mean(tmp,0)) / np.std(tmp, 0)
-    data       = tmp.reshape(data.shape)
-    print(data.shape)
+    data       = (data - meanData) / stdData
+
 
     #temporal filter
     data        = butterFilter(data, band = band, hdr = hdr)
@@ -173,14 +178,15 @@ if __name__ == '__main__':
     from h5py import File
     import mne
     import sklearn.preprocessing
-    with File('../Data/calibration_subject_MOCK_22.hdf5', 'r') as f:
+    with File('../Data/calibration_subject_MOCK_33.hdf5', 'r') as f:
         rawData = f['rawData/IM'].value
         procData = f['procData/IM'].value
         # events  = f['events'].value
         # cap     = f['cap'].value
 
 
-        procData   = stdPreproc(rawData, [0, 14], 250)
+        procData, _    = stdPreproc(rawData, [0, 14], 250)
+        print(procData.shape)
 
         # binnedData = eventSeparator(procData, events)
         # rickerWavelet(binnedData)

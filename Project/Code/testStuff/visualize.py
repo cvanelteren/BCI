@@ -2,6 +2,7 @@ from __future__ import print_function, division
 
 from pylab import *
 import numpy as np
+import scipy, scipy.signal
 
 
 def plotERP(data, events, cap):
@@ -21,18 +22,20 @@ def plotERP(data, events, cap):
     print(nRows)
     fig, axes = subplots(nrows = nRows, ncols = nCols)
     mainFrame = fig.add_subplot(111, frameon = 0)
+    mainFrame.tick_params(labelcolor = 'none',
+    top='off', bottom='off', left='off', right='off')
 
     # for every channel print erp of conditions
     for unique in uniques:
         idx       = np.where(events[:, 1] == unique)[0] # get rows
         plotData  = np.mean(data[idx,...], 0 )
         for idx, ax in enumerate(axes.flatten()):
+            ax.plot(plotData[..., idx], label = unique)
+            ax.legend()
             try:
-                ax.plot(plotData[..., idx], label = unique)
-                ax.legend()
                 ax.set_title(cap[idx, 0])
             except:
-                pass
+                continue
 
         # plot formatting
         subplots_adjust(hspace = .4)
@@ -52,7 +55,7 @@ def plotTF(data, events, cap = None):
         cw = scipy. signal.cwt(data[dataIdx, ...].flatten(),
                                scipy.signal.ricker,
                                wavelets)
-        cw = cw.reshape(data[dataIdx,...].shape)
+        cw = cw.reshape(cw.shape[0], *data[dataIdx,...].shape)
         cw = np.mean(cw,0)
     #    convData[unique] = cw
         nCols = 2
@@ -208,3 +211,4 @@ if __name__ == '__main__':
 
     print(procDataIM.shape)
     plotERP(procDataIM, eventsIM, cap = None)
+    plotTF(procDataIM, eventsIM)

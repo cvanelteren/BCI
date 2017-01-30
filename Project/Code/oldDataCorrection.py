@@ -3,7 +3,18 @@ import numpy as np
 import preproc
 import classification
 import visualize
-file = '../Data/calibration_subject_4.hdf5'
+import os
+from shutil import move
+'''
+This script edits the old experiment structure to fit with our final design
+More specifically first we had events as one whole, i.e. it would contain
+eventype x event value where all types where in the rows. The new design
+separates the conditions and stores them in separate structure of the hdf5 file
+'''
+
+file = '../Data/calibration_subject_100.hdf5'
+fileName = file.split('/')[-1]
+print(fileName)
 
 with File(file, 'r') as f:
     for i in f: print(i)
@@ -28,9 +39,25 @@ dataERN = data['feedback']
 
 procDataIM,  _  = preproc.stdPreproc(dataIM, [8, 20], 250)
 procDataERN, _  = preproc.stdPreproc(dataERN,[5, 40], 250)
+
+move(file, os.path.realpath('../Data/Backup/' + fileName + '.back'))
+
+with File(file, 'w') as f :
+    f.create_dataset('rawData/IM', data = dataIM)
+    f.create_dataset('events/IM', data = eventsIM)
+    f.create_dataset('procData/IM', data = procDataIM)
+
+    f.create_dataset('events/ERN', data = eventsERN)
+    f.create_dataset('rawData/ERN', data = dataERN)
+    f.create_dataset('procDataIM/ERN', data = procDataERN)
+
+    f.create_dataset('fSample', data = 250)
+    f.create_dataset('cap', data = cap)
+
+
 # print(procDataIM.shape, eventsIM.shape)
 # print(procDataERN.shape)
-visualize.plotERP(procDataIM, eventsIM, cap, fSample = 250)
-visualize.plotERP(procDataERN, eventsERN, cap, fSample = 250)
-classification.SVM(procDataIM[:,:-10,:], eventsIM, fft = 1)
-classification.SVM(procDataERN[:, :,:], eventsERN, fft = 0)
+# visualize.plotERP(procDataIM, eventsIM, cap, fSample = 250)
+# visualize.plotERP(procDataERN, eventsERN, cap, fSample = 250)
+# classification.SVM(procDataIM[:,:-10,:], eventsIM, fft = 1)
+# classification.SVM(procDataERN[:, :,:], eventsERN, fft = 0)

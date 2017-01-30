@@ -34,7 +34,10 @@ fileTest            = dataDir + 'test' + str(subjectNumber) + '.p'
 trialLenIM          = 1000 # msec
 trialLenERN         = 800  # msec
 
+# filterbands
 
+filterBandIM    = np.array([8, 20])
+filterBandERN   = np.array([1, 40])
  # trial length per condition
 trialLengthmapping = {'feedback': trialLenERN,
                      'target': trialLenIM}
@@ -105,9 +108,9 @@ while run:
 
             print('IM data shape', dataIM.shape)
             print('ERN data shape', dataERN.shape)
-            filterBand = np.array([0, 40])                                                     # filter range
-            procDataIM, chanSelectIM   = preproc.stdPreproc(dataIM, filterBand, hdr,  cap  = capFile)
-            procDataERN, chanSelectERN = preproc.stdPreproc(dataERN, filterBand, hdr, cap = capFile)
+                                                  # filter range
+            procDataIM, chanSelectIM   = preproc.stdPreproc(dataIM, filterBandIM, hdr,  cap  = capFile)
+            procDataERN, chanSelectERN = preproc.stdPreproc(dataERN, filterBandERN, hdr, cap = capFile)
             with File(fileCalibration, 'w') as f:
                 # store IM condition
                 f.create_dataset('rawData/IM',       data = dataIM)
@@ -208,7 +211,7 @@ while run:
                 bufferStorage    = bufferStorage[:, :nChans]
                 bufferStorage    = bufferStorage[:, chanSelectIM]
                 bufferStorage    =  bufferStorage.reshape(nSamplesIM, nTimePointsIM, bufferStorage.shape[-1])
-                bufferStorage, _ = preproc.stdPreproc(bufferStorage, [0,40], hdr, calibration = 0)
+                bufferStorage, _ = preproc.stdPreproc(bufferStorage, filterBandIM, hdr, calibration = 0)
                 bufferStorage    = bufferStorage.reshape(nSamplesIM,-1)     # reshape nPointsIM x (time x channels)
 		# print(bufferStorage.shape)
                 IM               = modelIM.predict_proba(abs(np.fft.fft(bufferStorage, axis = 1))**2)     # compute probability for IM
@@ -231,7 +234,7 @@ while run:
 
                     bufferStorage    = bufferStorage.reshape(1, -1)      # reshape nPointsIM x (time x channels)
 
-                    bufferStorage, _    = preproc.stdPreproc(bufferStorage, [0,40], hdr, calibration = 0)
+                    bufferStorage, _    = preproc.stdPreproc(bufferStorage, filterBandERN, hdr, calibration = 0)
 
 
                     #print('> ', startSample)
