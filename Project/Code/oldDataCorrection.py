@@ -11,8 +11,8 @@ More specifically first we had events as one whole, i.e. it would contain
 eventype x event value where all types where in the rows. The new design
 separates the conditions and stores them in separate structure of the hdf5 file
 '''
-
-file = '../Data/calibration_subject_100.hdf5'
+subjectNumber = 5
+file = '../Data/calibration_subject_{0}.hdf5'.format(subjectNumber)
 fileName = file.split('/')[-1]
 print(fileName)
 
@@ -49,7 +49,7 @@ with File(file, 'w') as f :
 
     f.create_dataset('events/ERN', data = eventsERN)
     f.create_dataset('rawData/ERN', data = dataERN)
-    f.create_dataset('procDataIM/ERN', data = procDataERN)
+    f.create_dataset('procData/ERN', data = procDataERN)
 
     f.create_dataset('fSample', data = 250)
     f.create_dataset('cap', data = cap)

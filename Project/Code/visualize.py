@@ -38,7 +38,7 @@ def plotConfusionMatrix(cm, classes,
     ylabel('True label')
     xlabel('Predicted label')
     show()
-    
+
 def plotERP(data, events, cap, fSample = 100):
     '''
     Plots the ERP of the data per condition as indicated in events
@@ -147,12 +147,20 @@ def plotTF(data, events, cap = None, fSample = 100):
 
 if __name__ == '__main__':
     from h5py import File
-    with File('../Data/calibration_subject_MOCK_33.hdf5') as f:
+    with File('../Data/calibration_subject_100.hdf5') as f:
         for i in f: print(i)
         procDataIM = f['procData/IM'].value
         eventsIM   = f['events/IM'].value
 
+        procDataERN = f['procData/ERN'].value
+        eventsERN   = f['events/ERN'].value
+        try:
+            cap = f['cap'].value
+        except:
+            print('cap file not found')
+            cap = None
     print(procDataIM.shape)
 
-    # plotERP(procDataIM, eventsIM, cap = None)
-    plotTF(procDataIM, eventsIM)
+    # plotERP(procDataIM, eventsIM, cap = cap)
+    plotERP(procDataERN, eventsERN, cap = cap)
+    # plotTF(procDataIM, eventsIM)
