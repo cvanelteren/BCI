@@ -1,0 +1,26 @@
+stats.txt
+PATRICK:
+IM
+194,69s 341,6m  (1)
+216,65s 341,64m (1)
+208,06s 341,6m  (1)
+
+AVG: 
+
+206,46(period)
+
+rest und jump plattformen klappen nicht immer slide
+
+IM Plus
+198,43s 341,59m (1)
+224,33s 341,6m (1)
+202,53s 341,59m (1)
+202,71s 341,59m (1)
+
+AVG:
+
+201,223(period) TOLL!!!
+
+aehnlich
+
+LISA:
