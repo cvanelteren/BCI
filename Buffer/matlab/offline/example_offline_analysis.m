@@ -26,6 +26,7 @@ run ../utilities/initPaths.m
 % then you should modify step 1.2 in the sliceraw.m file
 subject  = '7'
 [data,devents,hdr,allevents]=sliceraw('example_data/raw_buffer/0001','startSet',{'stimulus.tgtFlash'},'trlen_ms',1500);
+% [data,devents,hdr,allevents]=sliceraw('C:\Users\caspe\Downloads\S9\S9\0924za\1405\raw_buffer\0001','startSet',{'stimulus.tgtFlash'},'trlen_ms',1500);
 save('../../../Project/Data/example_test')
 %%
 % N.B. to slice on *both* 'stimulus.rowFlash' and 'stimulus.colFlash' events, use:
