@@ -6,15 +6,18 @@ from pylab import *
 from h5py import File
 
 
-def butterFilter(data, band, N = 2, hdr = 100, dim = 1, filter_type = 'lowpass'):
+def butterFilter(data, band, N = 2, fs = 100, dim = 1, filter_type = 'lowpass'):
     '''
-    Simple butter worth filter
-    filter defaults to the first axis (assumes time)
+    Applies temporal butterworth filter
+    Inputs:
+        data        : epochs x time x channesl
+        band        : min max of to be filtered frequency; if only 1 values is given it is assumed low pass filter
+        N           : filter order
+        fs          : sampling rate
+        dim         : 1 ; assumes structure of data (time = first dimension)
+        filter_type : default is low pass (if single value is given else band pass)
+    returns filtered data
     '''
-    if type(hdr) == int:
-        fs = hdr
-    else:
-        fs = hdr.fSample
     band = np.array(band) / float(fs)
     if len(band) == 2:
         filter_type = 'bandpass'
@@ -59,7 +62,7 @@ def car(data):
   W = np.eye(n) - 1 / float(n)
   return  data.dot(W)
 
-def stdPreproc(data, band,  hdr, cap = None, numStd = 3, calibration = 1):
+def stdPreproc(data, band,  fSample, cap = None, numStd = 3, calibration = 1):
     '''
     The standard preprocessing pipeline includes:
         Linear detrending
@@ -71,7 +74,7 @@ def stdPreproc(data, band,  hdr, cap = None, numStd = 3, calibration = 1):
     Inputs:
         data        : trial x time x channel
         band        : frequencies to filter at [low (high)]
-        hdr         : hdr object containing the sampling frequency
+        fSample     : the sampling frequency
         cap         : containing the channel information
         numStd      : how many standard deviations is should for boundary in outlier detection
         calibration : check for performing outlier detection; set to false when playing the game
@@ -91,7 +94,7 @@ def stdPreproc(data, band,  hdr, cap = None, numStd = 3, calibration = 1):
         tmp = data.reshape(-1, data.shape[-1]) # concatenate all the trials by channels
         power = []
         for i in tmp.T:
-            i,_ = scipy.signal.welch(i, hdr, axis = 0)
+            i,_ = scipy.signal.welch(i, fSample, axis = 0)
             power.append(i)
 
         power         = np.array(power)
@@ -124,7 +127,7 @@ def stdPreproc(data, band,  hdr, cap = None, numStd = 3, calibration = 1):
 
 
     #temporal filter
-    data        = butterFilter(data, band = band, hdr = hdr)
+    data        = butterFilter(data, band = band, fs = fSample)
 
     # spatial filter
     data        = car(data)

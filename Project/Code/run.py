@@ -87,7 +87,7 @@ def startInTerminal(file):
             raise UnknownOS
 
 
-# print(startInTerminal('signalProcessing.py'))
+print(startInTerminal('signalProcessing.py'))
 def waitForKeyPress():
     '''
     Waits for a selection key

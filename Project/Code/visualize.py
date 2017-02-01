@@ -246,48 +246,32 @@ if __name__ == '__main__':
 
 
     runTimes  = np.genfromtxt('../Data/BrainRunnerResults.txt', dtype = None)
-    endTimes  = np.array(runTimes[1:, 0], dtype = float) # first contains the headers; remove them
-    runType   = np.array(runTimes[1:, -1] , dtype = str)
 
-    from collections import Counter
-    count = Counter(runType)
-
-    # IM      = count['IM']
-    # ImPlus  = count['IM+']
-    # x       = (1,2)
-    # fig, ax = subplots()
-    # ax.bar(x, (IM, ImPlus))
-    # width = .75
-    # ax.set_xlim((.5,3))
-    # ax.set_ylim([0, max(IM, ImPlus) * 1.1])
-    # ax.set_xticks([i + width / 2 for i in x])
-    # ax.set_xticklabels(['IM', 'IM+'])
-
-    # plot the run results!
-    fig, ax = subplots()
-    uniques = np.unique(runType)
-    N       = np.arange(len(uniques))
-    means   = []
+    playerType = np.unique(runTimes[1:,:][:,2])
     xticker = 0
-    for unique in uniques:
-        idx             = np.where(runType == unique)
-        plotRunTime     = endTimes[idx]
-        x               = range(len(plotRunTime))
-        if len(x) > xticker:
-            xticker     = x
-        stdRunTime      = np.std(plotRunTime)
-        ax.errorbar(x, plotRunTime, stdRunTime, label = unique)
-        means.append(np.mean(plotRunTime))
-
-    ax.legend(loc = 0)
-    ax.set_xticks(xticker)
-    ax.set_xlabel('Run')
-    ax.set_ylabel('End time [s]')
-    fig.savefig('../Figures/AverageRunTimeBrainRunner', format = 'pdf')
-
     fig, ax = subplots()
-    width   = .5
-    ax.bar(N, means)
-    ax.set_xticks(N + .35)
-    ax.set_xticklabels(uniques)
-    show()
+    for player in playerType:
+        if player == '1':
+            playerString = 'Human'
+        else:
+            playerString = 'Bot'
+        idx = np.where(runTimes == player)
+        times, types, _ = list(runTimes[idx[0], ...].T)
+        times = np.array(times, dtype = float)
+        modes = np.unique(types)
+        for mode in modes:
+            jdx         = np.where(mode == types)
+            plotRunTime = times[jdx]
+            x           = range(len(plotRunTime))
+            # print(len(x), xticker)
+            stdTime     = np.std(plotRunTime)
+            ax.errorbar(x, plotRunTime, stdTime, label = '{0} {1}'.format(playerString, mode))
+            # print(type(x), xticker)
+            if len(x) > xticker:
+                xticker     = len(x)
+    ax.legend(loc = 0)
+    ax.set_xlabel('Run')
+    ax.set_xticks(range(xticker))
+    ax.set_ylabel('End Time (s)')
+    fig.savefig('../Figures/BrainRunnerTimes.pdf')
+    # show()
