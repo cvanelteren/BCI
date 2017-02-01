@@ -151,9 +151,9 @@ while run:
                 chanSelectERN = f['chanSelector/ERN'].value
 	    # print(procDataIM.shape)
             print('Training IM classifier')
-            modelIM  = classification.SVM(procDataIM, eventsIM, fft = 1)  # feed power to clsfr
+            modelIM, _ = classification.SVM(procDataIM, eventsIM, fft = 1)  # feed power to clsfr
             print('Training ERN classifier')
-            modelERN = classification.SVM(procDataERN, eventsERN)
+            modelERN, _ = classification.SVM(procDataERN, eventsERN)
 
             bufhelp.sendEvent("training", "done")
 

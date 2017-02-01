@@ -67,9 +67,9 @@ def SVM(data, events, numCrossFold = 10, fft = 0, cs  = np.linspace(.01, 10, 30)
                     'C':cs}
 
 
-    # classWeights = 'balanced'
-    print('Class weights: \n\t : ', classWeights)
-    model = sklearn.svm.SVC(class_weight = classWeights, probability = 1)
+
+    # print('Class weights: \n\t : ', classWeights)
+    model = sklearn.svm.SVC(class_weight = 'balanced', probability = 1)
     cv    = gs(model,
                parameters,
                cv = numCrossFold,
@@ -116,12 +116,11 @@ def SVM(data, events, numCrossFold = 10, fft = 0, cs  = np.linspace(.01, 10, 30)
         conf += tmp
         accuracy.append(sum(tmp.diagonal()) / len(YTest))
 
-    print('Confusion matrix : \n', conf)
-    plotConfusionMatrix(conf, classWeights.keys())
+    fig = plotConfusionMatrix(conf, classWeights.keys())
     # print('Confusion matrix : \n', sklearn.metrics.confusion_matrix(events[:,1], pred))
     print('Mean accuracy {0} +-{1}'.format(np.mean(accuracy), np.std(accuracy)))
     model.fit(data, events[:,1])
-    return model
+    return model, fig
 
 
 
@@ -140,20 +139,21 @@ if __name__ == '__main__':
     import sklearn, sklearn.preprocessing
     from systemHelper import enterSubjectNumber
     # file = enterSubjectNumber(10412)
-    file = '../Data/calibration_subject_MOCK_3.hdf5' # uncomment for mockdata
+    # file = '../Data/calibration_subject_15.hdf5' # uncomment for mockdata
+    file = '../Data/transcodes72.hdf5'
     with File(file) as f:
         print('File contents:\n\t')
         for i in f:
             print(i)
-        procDataIM =  f['procData/IM'].value
-        procDataERN = f['procData/ERN'].value
+        rawData    = f['rawData/IM'].value
+        # procDataIM =  f['procData/IM'].value
+        # procDataERN = f['procData/ERN'].value
         eventsIM    = f['events/IM'].value
-        eventsERN    = f['events/ERN'].value
+        # eventsERN    = f['events/ERN'].value
     import sklearn
-    data    = [procDataIM, procDataERN]
-    events  = [eventsIM, eventsERN]
+
 
     # print(data)
-
-    model = SVM(procDataIM, eventsIM, fft = 1)
-    model = SVM(procDataERN, eventsERN)
+    procDataIM, _ = stdPreproc(rawData, [8,20], 250)
+    model, fig    = SVM(procDataIM, eventsIM, fft = 1)
+    # model = SVM(procDataERN, eventsERN)
