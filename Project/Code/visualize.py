@@ -263,20 +263,31 @@ if __name__ == '__main__':
     # ax.set_xticks([i + width / 2 for i in x])
     # ax.set_xticklabels(['IM', 'IM+'])
 
+    # plot the run results!
     fig, ax = subplots()
     uniques = np.unique(runType)
+    N       = np.arange(len(uniques))
+    means   = []
     xticker = 0
     for unique in uniques:
-        idx = np.where(runType == unique)
-        plotRunTime = endTimes[idx]
-        x  = range(len(plotRunTime))
+        idx             = np.where(runType == unique)
+        plotRunTime     = endTimes[idx]
+        x               = range(len(plotRunTime))
         if len(x) > xticker:
-            xticker = x
-        stdRunTime = np.std(plotRunTime)
+            xticker     = x
+        stdRunTime      = np.std(plotRunTime)
         ax.errorbar(x, plotRunTime, stdRunTime, label = unique)
+        means.append(np.mean(plotRunTime))
+
     ax.legend(loc = 0)
     ax.set_xticks(xticker)
     ax.set_xlabel('Run')
     ax.set_ylabel('End time [s]')
     fig.savefig('../Figures/AverageRunTimeBrainRunner', format = 'pdf')
-    # show()
+
+    fig, ax = subplots()
+    width   = .5
+    ax.bar(N, means)
+    ax.set_xticks(N + .35)
+    ax.set_xticklabels(uniques)
+    show()

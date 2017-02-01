@@ -63,27 +63,31 @@ def startInTerminal(file):
     Uses subprocess.call to open a terminal an run a python script.
     Checks for possible versions depending on OS being run
     '''
-    try:
-        call(['powershell', 'python', file], creationflags = subprocess.CREATE_NEW_CONSOLE) #tested
-    except:
-        print('The OS is not windows, trying linux')
-    try:
-        call(['gnome-terminal','-x', 'python', file])                       #tested
-    except:
-        print('Gnome-terminal not detected, trying xterm')
-    try:
-        call(['xterm', '-e', file])                                         # untested
-    except:
-        print('xterm note detected, trying MAC terminal')
-    try:
-        call(['open', '-W', '-a', 'Terminal.app', 'python', file])          # tested
-    except:
-        print('Please check the details of the script, and edit the terminal you are using')
-        raise UnknownOS
+    while True:
+        try:
+            call(['powershell', 'python', file], creationflags = subprocess.CREATE_NEW_CONSOLE) #tested
+            break
+        except:
+            print('The OS is not windows, trying linux')
+        try:
+            call(['gnome-terminal','-x', 'python', file])                       #tested
+            break
+        except:
+            print('Gnome-terminal not detected, trying xterm')
+        try:
+            call(['xterm', '-e', file])                                         # untested
+            break
+        except:
+            print('xterm note detected, trying MAC terminal')
+        try:
+            call(['open', '-W', '-a', 'Terminal.app', 'python', file])          # tested
+            break
+        except:
+            print('Please check the details of the script, and edit the terminal you are using')
+            raise UnknownOS
 
 
-
-startInTerminal('signalProcessing.py')
+# print(startInTerminal('signalProcessing.py'))
 def waitForKeyPress():
     '''
     Waits for a selection key
