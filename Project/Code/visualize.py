@@ -221,21 +221,62 @@ if __name__ == '__main__':
 
 
 
+
     # print(procDataIM.shape)
     import preproc
 
     # plot the ERP of ERN
-    fig = plotERP(procDataERN, eventsERN, cap = cap, fSample = fSample)
-    fig.savefig('../Figures/ERP_subject_{0}.pdf'.format(subjectNumber))
-    # show(fig)
+    # fig = plotERP(procDataERN, eventsERN, cap = cap, fSample = fSample)
+    # fig.savefig('../Figures/ERP_subject_{0}.pdf'.format(subjectNumber))
+    # # show(fig)
+    #
+    # fig = plotERP(procDataIM, eventsIM, cap = cap, fSample = fSample)
+    #
+    # # plot the spectrum of imagined movement
+    # fig = plotSpect(procDataIM, eventsIM)
+    # fig.savefig('../Figures/Spectrum_subject_{0}.pdf'.format(subjectNumber))
 
-    # plot the spectrum of imagined movement
-    fig = plotSpect(procDataIM, eventsIM)
-    fig.savefig('../Figures/Spectrum_subject_{0}.pdf'.format(subjectNumber))
-
-
+    # fig = plotTF(procDataIM, eventsIM, cap = cap, fSample = fSample)
+    # show()
     # # plot the confusion of ERN and imagined movement
     # modelIM, fig = SVM(procDataIM, eventsIM, fft = 1)
     # fig.savefig('../Figures/Confusion_subject_{0}.pdf'.format(subjectNumber))
 
-    show()
+    # show()
+
+
+    runTimes  = np.genfromtxt('../Data/BrainRunnerResults.txt', dtype = None)
+    endTimes  = np.array(runTimes[1:, 0], dtype = float) # first contains the headers; remove them
+    runType   = np.array(runTimes[1:, -1] , dtype = str)
+
+    from collections import Counter
+    count = Counter(runType)
+
+    # IM      = count['IM']
+    # ImPlus  = count['IM+']
+    # x       = (1,2)
+    # fig, ax = subplots()
+    # ax.bar(x, (IM, ImPlus))
+    # width = .75
+    # ax.set_xlim((.5,3))
+    # ax.set_ylim([0, max(IM, ImPlus) * 1.1])
+    # ax.set_xticks([i + width / 2 for i in x])
+    # ax.set_xticklabels(['IM', 'IM+'])
+
+    fig, ax = subplots()
+    uniques = np.unique(runType)
+    xticker = 0
+    for unique in uniques:
+        idx = np.where(runType == unique)
+        plotRunTime = endTimes[idx]
+        x  = range(len(plotRunTime))
+        if len(x) > xticker:
+            xticker = x
+        stdRunTime = np.std(plotRunTime)
+        ax.errorbar(x, plotRunTime, stdRunTime, label = unique)
+    ax.legend(loc = 0)
+    ax.set_xticks(xticker)
+    ax.set_xlabel('Run')
+    ax.set_ylabel('End time [s]')
+    fig.savefig('../Figures/AverageRunTimeBrainRunner', format = 'pdf')
+    # show()

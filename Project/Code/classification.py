@@ -119,6 +119,7 @@ def SVM(data, events, numCrossFold = 10, fft = 0, cs  = np.linspace(.01, 10, 30)
     fig = plotConfusionMatrix(conf, classWeights.keys())
     # print('Confusion matrix : \n', sklearn.metrics.confusion_matrix(events[:,1], pred))
     print('Mean accuracy {0} +-{1}'.format(np.mean(accuracy), np.std(accuracy)))
+    print(accuracy)
     model.fit(data, events[:,1])
     return model, fig
 
@@ -155,5 +156,6 @@ if __name__ == '__main__':
 
     # print(data)
     procDataIM, _ = stdPreproc(rawData, [8,20], 250)
-    model, fig    = SVM(procDataIM, eventsIM, fft = 1)
+    model, fig    = SVM(procDataIM, eventsIM, fft = 0)
+    show()
     # model = SVM(procDataERN, eventsERN)

@@ -82,7 +82,7 @@ return;
 %%---------------------------------------------------------------------------------
 % Alt1 : just run the pre-processing on this data
 %        assuming that [events.value] contains a class indicator for each epoch
-[X_pp,pipeline]=preproc_erp(data,'Y',devents,'fs',hdr.Fs,'freqband',[8 10 24 28],'capFile',capFile,'overridechnms',1);
+% [X_pp,pipeline]=preproc_erp(data,'Y',devents,'fs',hdr.Fs,'freqband',[8 10 20],'capFile',capFile,'overridechnms',1);
 [X_pp,pipeline]=preproc_ersp(data,'Y',devents,'fs',hdr.Fs,'freqband',[8 10 24 28],'capFile',capFile,'overridechnms',1);
 
 %%---------------------------------------------------------------------------------
