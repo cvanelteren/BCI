@@ -24,8 +24,11 @@ run ../utilities/initPaths.m
 %  1.3) read the data for the selected events
 % If you have a more complex criteria for which events to slice and return
 % then you should modify step 1.2 in the sliceraw.m file
+subject  = '7'
 [data,devents,hdr,allevents]=sliceraw('example_data/raw_buffer/0001','startSet',{'stimulus.tgtFlash'},'trlen_ms',1500);
-
+% [data,devents,hdr,allevents]=sliceraw('C:\Users\caspe\Downloads\S9\S9\0924za\1405\raw_buffer\0001','startSet',{'stimulus.tgtFlash'},'trlen_ms',1500);
+save('../../../Project/Data/example_test')
+%%
 % N.B. to slice on *both* 'stimulus.rowFlash' and 'stimulus.colFlash' events, use:
 %   ... 'startSet',{{'stimulus.rowFlash' 'stimulus.colFlash'}}
 
@@ -79,7 +82,7 @@ return;
 %%---------------------------------------------------------------------------------
 % Alt1 : just run the pre-processing on this data
 %        assuming that [events.value] contains a class indicator for each epoch
-[X_pp,pipeline]=preproc_erp(data,'Y',devents,'fs',hdr.Fs,'freqband',[8 10 24 28],'capFile',capFile,'overridechnms',1);
+% [X_pp,pipeline]=preproc_erp(data,'Y',devents,'fs',hdr.Fs,'freqband',[8 10 20],'capFile',capFile,'overridechnms',1);
 [X_pp,pipeline]=preproc_ersp(data,'Y',devents,'fs',hdr.Fs,'freqband',[8 10 24 28],'capFile',capFile,'overridechnms',1);
 
 %%---------------------------------------------------------------------------------

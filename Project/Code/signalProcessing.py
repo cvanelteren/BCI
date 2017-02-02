@@ -20,13 +20,15 @@ nChans      = len(capFile)  # mobita outputs 37, redundant channels remove them
 # SET THE SUBJECT NUMBER
 dataDir        = '../Data/'                     # storage of directory
 conditionType  = 'calibration_subject_'         # calibration file
-subjectNumber  = 8                           # subject number
+subjectNumber  = 13                           # subject number
 
 if hdr.fSample == 100:                          # debug case
     nChans          = 4
     conditionType   = conditionType + 'MOCK_'
     capFile         = None
     # hdf = 250
+
+fSample = hdr.fSample
 # storage file
 fileCalibration     = dataDir + conditionType + str(subjectNumber) + '.hdf5'
 fileTest            = dataDir + 'test' + str(subjectNumber) + '.p'
@@ -54,7 +56,7 @@ calibrationCatchEvents = [\
 wn = np.array([0, 40]) / hdr.fSample
 b, a = signal.butter(2, wn, btype = 'bandpass')
 # nChans = hdr.nChannels
-dt =  1 / hdr.fSample
+dt =  1 / fSample
 
 
 nPointsERN      =  int(trialLenERN /(1e3) * hdr.fSample) # number of points per epoch IM
@@ -109,8 +111,8 @@ while run:
             print('IM data shape', dataIM.shape)
             print('ERN data shape', dataERN.shape)
                                                   # filter range
-            procDataIM, chanSelectIM   = preproc.stdPreproc(dataIM, filterBandIM, hdr,  cap  = capFile)
-            procDataERN, chanSelectERN = preproc.stdPreproc(dataERN, filterBandERN, hdr, cap = capFile)
+            procDataIM, chanSelectIM   = preproc.stdPreproc(dataIM, filterBandIM, fSample,  cap  = capFile)
+            procDataERN, chanSelectERN = preproc.stdPreproc(dataERN, filterBandERN, fSample, cap = capFile)
             with File(fileCalibration, 'w') as f:
                 # store IM condition
                 f.create_dataset('rawData/IM',       data = dataIM)
@@ -128,7 +130,7 @@ while run:
                 if capFile != None:
                     f.create_dataset('cap',          data = capFile)
                 # store sampling rate
-                f.create_dataset('fSample', data = hdr.fSample)
+                f.create_dataset('fSample', data = fSample)
             print("End calibration phase")
 
         # load data from disk; train classifier
@@ -149,21 +151,18 @@ while run:
                 # boolean for removed channels
                 chanSelectIM = f['chanSelector/IM'].value
                 chanSelectERN = f['chanSelector/ERN'].value
-	    # print(procDataIM.shape)
+
             print('Training IM classifier')
-            modelIM  = classification.SVM(procDataIM, eventsIM, fft = 1)  # feed power to clsfr
+            modelIM, _ = classification.SVM(procDataIM, eventsIM, fft = 1)  # feed power to clsfr
             print('Training ERN classifier')
-            modelERN = classification.SVM(procDataERN, eventsERN)
+            modelERN, _ = classification.SVM(procDataERN, eventsERN)
 
             bufhelp.sendEvent("training", "done")
 
         # interface with the game
-        elif e.value == "test1" or e.value == "test2":
+        elif e.value == "test1" or e.value == "test2" or e.value == 'test3':
             print("Feedback phase")
-            # idx,
 
-            #e = ftc.getEvents()[-1]
-            # print(e[-1])
             useERN = False
             try:
                 print(e.value, e.type)
@@ -211,9 +210,9 @@ while run:
                 bufferStorage    = bufferStorage[:, :nChans]
                 bufferStorage    = bufferStorage[:, chanSelectIM]
                 bufferStorage    =  bufferStorage.reshape(nSamplesIM, nTimePointsIM, bufferStorage.shape[-1])
-                bufferStorage, _ = preproc.stdPreproc(bufferStorage, filterBandIM, hdr, calibration = 0)
+                bufferStorage, _ = preproc.stdPreproc(bufferStorage, filterBandIM, fSample, calibration = 0)
                 bufferStorage    = bufferStorage.reshape(nSamplesIM,-1)     # reshape nPointsIM x (time x channels)
-		# print(bufferStorage.shape)
+
                 IM               = modelIM.predict_proba(abs(np.fft.fft(bufferStorage, axis = 1))**2)     # compute probability for IM
 
                 weightedIM       = ( weightIM * IM.T ).T
@@ -234,7 +233,7 @@ while run:
 
                     bufferStorage    = bufferStorage.reshape(1, -1)      # reshape nPointsIM x (time x channels)
 
-                    bufferStorage, _    = preproc.stdPreproc(bufferStorage, filterBandERN, hdr, calibration = 0)
+                    bufferStorage, _    = preproc.stdPreproc(bufferStorage, filterBandERN, fSample, calibration = 0)
 
 
                     #print('> ', startSample)
