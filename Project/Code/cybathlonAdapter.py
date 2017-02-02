@@ -251,8 +251,8 @@ while running:
             pred = evt.value
             if pred[1]-pred[0] > 0.1 and (second_pred is not None):
                 send_command(CMDS[second_pred]);
-                bufhelp.sendEvent('cmd','ERN:' +  str(CMDS[i12[0]]) + verbCMDS[i12[0]])
-                print('cmd ERN redo',verbCMDS[i12[0]])
+                bufhelp.sendEvent('cmd','ERN:' +  str(CMDS[second_pred]) + verbCMDS[second_pred])
+                print('cmd ERN redo',verbCMDS[second_pred])
     	elif evt.type == 'keyboard':
     		if   evt.value == 'q' :  send_command(CMD_SPEED)
     		elif evt.value == 'w' :  send_command(CMD_JUMP)
