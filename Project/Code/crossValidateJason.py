@@ -34,7 +34,7 @@ tmpdata = np.array(tmpData, dtype = float)
 tmpevent = np.array(tmpEvent, dtype = str)
 print(tmpdata.shape, tmpevent.shape)
 print(tmpevent.dtype, tmpdata.dtype)
-with File('../Data/transcodes72.hdf5', 'w') as f :
+with File('../Data/crossValSetExampleJason.hdf5', 'w') as f :
     f.create_dataset('rawData/IM', data  = tmpdata)
     f.create_dataset('events/IM', data    = tmpevent)
     # for i in f:print(i)

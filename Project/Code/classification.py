@@ -142,7 +142,7 @@ if __name__ == '__main__':
     # file = enterSubjectNumber(10412)
     subjectNumber = 4
     file = '../Data/calibration_subject_{0}.hdf5'.format(subjectNumber) # uncomment for mockdata
-    # file = '../Data/transcodes72.hdf5'
+    # file = '../Data/crossValSetExampleJason.hdf5'   # exmaple data from matlab/offline  for testing if our pipeline worked as it should
     with File(file) as f:
         print('File contents:\n')
         for i in f:
