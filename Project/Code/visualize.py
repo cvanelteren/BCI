@@ -78,7 +78,7 @@ def plotERP(data, events, cap, fSample = 100):
                 ax.set_title(cap[idx, 0])
             except:
                 pass
-        ax.legend(uniques, loc = 'center left' , bbox_to_anchor = (1 , 3.5))
+        ax.legend(uniques,   loc = 'center left' , bbox_to_anchor = (1 , 3.5))
         # plot formatting
         subplots_adjust(hspace = .4)
         mainFrame.set_xlabel('Time[s]', fontsize = 20)
@@ -108,7 +108,7 @@ def plotTF(data,
         fSample     : sampling rate used for constructing the time vector
         waveletRange: range of the wavelets to plot
     '''
-    uniques = np.unique(events[:, 1])
+    uniques = np.unique(events[:, 1])                 # get the conditions of the events
     from matplotlib import ticker
     convData = {}
     # for every condition average the tf decomposition
@@ -133,9 +133,12 @@ def plotTF(data,
         maxTime = data.shape[1] * 1/fSample
         for idx, ax in enumerate(axes.flatten()):
             im =     ax.imshow(cw[..., idx],
-                     aspect = 'auto',
-                     interpolation = 'bicubic',
-                     extent = [0, maxTime, waveletRange[0], waveletRange[-1]])
+                     aspect         = 'auto',
+                     interpolation  = 'bicubic',
+                     origin         = 'upper',
+                     extent         = [0, maxTime,
+                                      waveletRange[0], waveletRange[-1]])
+
             c = colorbar(im, ax = ax)
             c.set_label('Power', fontsize = 15)
             try:
@@ -161,6 +164,7 @@ def plotTF(data,
 
     # show()
     return fig
+
 def plotSpect(data, events):
     '''
     Plots the frequency spectrum per channel using Welch's method
@@ -188,11 +192,11 @@ def plotSpect(data, events):
             axes.flatten()[idx].yaxis.set_major_formatter(
                 matplotlib.ticker.ScalarFormatter(useMathText = True, useOffset = False) )
             xlim([0,40])
-    xlabel('Frequency [Hz]', fontsize = 20)
-    ylabel('Power', fontsize = 20)
+    xlabel('Frequency [Hz]', fontsize = 10)
+    ylabel('Power', fontsize = 10)
     subplots_adjust(hspace = .4)
 
-    axes.flatten()[idx].legend(uniques, loc = 'center left' , bbox_to_anchor = (1 , 3.5))
+    axes.flatten()[idx].legend(uniques, loc = 'center left' , bbox_to_anchor = (1 , 3.5), fontsize = 5)
     tick_params(          labelcolor = 'none',
                           top        = 'off',
                           bottom     = 'off',
@@ -206,10 +210,10 @@ if __name__ == '__main__':
 
     from h5py import File
     from classification import SVM
-    subjectNumber = 4
+    subjectNumber = 3
     file = '../Data/calibration_subject_{0}.hdf5'.format(subjectNumber)
     with File(file) as f:
-        for i in f: print(i)
+        # for i in f: print(i)
         procDataIM   = f['procData/IM'].value
         procDataERN  = f['procData/ERN'].value
         eventsIM     = f['events/IM'].value
@@ -228,23 +232,25 @@ if __name__ == '__main__':
     # plot the ERP of ERN
     # fig = plotERP(procDataERN, eventsERN, cap = cap, fSample = fSample)
     # fig.savefig('../Figures/ERP_subject_{0}.pdf'.format(subjectNumber))
-    # # show(fig)
-    #
+    # show(fig)
+
     # fig = plotERP(procDataIM, eventsIM, cap = cap, fSample = fSample)
     #
     # # plot the spectrum of imagined movement
-    # fig = plotSpect(procDataIM, eventsIM)
-    # fig.savefig('../Figures/Spectrum_subject_{0}.pdf'.format(subjectNumber))
+    fig = plotSpect(procDataIM, eventsIM)
+    fig.savefig('../Figures/Spectrum_subject_{0}.pdf'.format(subjectNumber))
 
-    # fig = plotTF(procDataIM, eventsIM, cap = cap, fSample = fSample)
+    fig = plotTF(procDataIM, eventsIM, cap = cap, fSample = fSample)
     # show()
-    # # plot the confusion of ERN and imagined movement
+    # plot the confusion of ERN and imagined movement
     # modelIM, fig = SVM(procDataIM, eventsIM, fft = 1)
     # fig.savefig('../Figures/Confusion_subject_{0}.pdf'.format(subjectNumber))
 
     # show()
 
 
+
+    # plot the brain runner data for all subjects and or bots
     runTimes  = np.genfromtxt('../Data/BrainRunnerResults.txt', dtype = None)
 
     playerType = np.unique(runTimes[1:,:][:,2])
@@ -262,6 +268,7 @@ if __name__ == '__main__':
         for mode in modes:
             jdx         = np.where(mode == types)
             plotRunTime = times[jdx]
+            print(playerString, mode, np.mean(plotRunTime), np.std(plotRunTime))
             x           = range(len(plotRunTime))
             # print(len(x), xticker)
             stdTime     = np.std(plotRunTime)
