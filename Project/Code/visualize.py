@@ -230,25 +230,24 @@ if __name__ == '__main__':
     import preproc
 
     # plot the ERP of ERN
-    # fig = plotERP(procDataERN, eventsERN, cap = cap, fSample = fSample)
-    # fig.savefig('../Figures/ERP_subject_{0}.pdf'.format(subjectNumber))
-    # show(fig)
+    fig = plotERP(procDataERN, eventsERN, cap = cap, fSample = fSample)
+    fig.savefig('../Figures/ERP_subject_{0}.pdf'.format(subjectNumber))
 
-    # fig = plotERP(procDataIM, eventsIM, cap = cap, fSample = fSample)
-    #
+    # plot ERP of IM (kinda not necessary)
+    fig = plotERP(procDataIM, eventsIM, cap = cap, fSample = fSample)
+    fig.savefig('..Figures/ERP_subject{0}_IM.pdf'.format(subjectNumber))
+
     # # plot the spectrum of imagined movement
     fig = plotSpect(procDataIM, eventsIM)
     fig.savefig('../Figures/Spectrum_subject_{0}.pdf'.format(subjectNumber))
 
     fig = plotTF(procDataIM, eventsIM, cap = cap, fSample = fSample)
-    # show()
+
     # plot the confusion of ERN and imagined movement
-    # modelIM, fig = SVM(procDataIM, eventsIM, fft = 1)
-    # fig.savefig('../Figures/Confusion_subject_{0}.pdf'.format(subjectNumber))
+    modelIM, fig = SVM(procDataIM, eventsIM, fft = 1)
+    fig.savefig('../Figures/Confusion_subject_{0}.pdf'.format(subjectNumber))
 
-    # show()
-
-
+    show()
 
     # plot the brain runner data for all subjects and or bots
     runTimes  = np.genfromtxt('../Data/BrainRunnerResults.txt', dtype = None)
